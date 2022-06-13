@@ -12,14 +12,17 @@ import Modules.constants as constants
 class LocateR0hc:
     n_step_size = 0.1   # km step size along the line-of-sight (LOS)
     max_los_dist = 4000   # km, max distance that we look for graze point along the LOS
-    def __init__(self, obs_dict, r_array, t_array):
+
+    def __init__(self, obs_dict, r_array, v_array, t_array):
         # Unpack inputs
         self.hc_type = obs_dict["hc_type"]
         self.starECI = obs_dict["starECI"]
-        self.h_unit = obs_dict['h_unit']
-        self.R_orbit = obs_dict['R_orbit']
+        self.crossing_time_range = obs_dict["crossing_time_range"]
         self.r_array = r_array
+        self.v_array = v_array
         self.t_array = t_array
+
+        self.R_orbit, self.h_unit = self.define_R_orbit_h_unit()  # derived inputs
 
         # Sequential steps of the algorithm
         self.A_2d, self.r0_2d = self.get_initial_guess()
@@ -127,3 +130,11 @@ class LocateR0hc:
     # Used in HCNM Driver
     def return_orbit_data(self):
         return self.t0_model_index, self.lat_gp, self.lon_gp
+
+    # Function used to define R_orbit and h_unit at mid_time_crossing
+    def define_R_orbit_h_unit(self):
+        mid_time_index = np.where(self.t_array >= np.mean(self.crossing_time_range))[0][0]
+        R_orbit = np.linalg.norm(self.r_array[mid_time_index])
+        h_unit = np.cross(self.r_array[mid_time_index], self.v_array[mid_time_index])
+        h_unit = h_unit / np.linalg.norm(h_unit)
+        return R_orbit, h_unit

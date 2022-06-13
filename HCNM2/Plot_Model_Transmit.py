@@ -12,7 +12,7 @@ from Modules.NormalizeSpectrumNICER import NormalizeSpectrumNICER
 from Modules.TransmitModel import TransmitModel
 
 # import observation dictionaries
-from ObservationDictionaries.v4641NICER import v4641NICER
+from ObservationDictionaries.NICER.v4641NICER import v4641NICER
 
 obs_dict = v4641NICER
 bin_size = 1.0   # sec

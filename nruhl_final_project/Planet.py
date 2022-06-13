@@ -8,7 +8,8 @@ G = 6.6743*10**(-11)     # Nm^2/kg^2, Gravitational constant
 class Planet():
     def __init__(self, cb):
         self.cb = cb
-        # Import the Planet dictionary into the local namespace, then access with locals() later
+        # Import the Planet dictionary into the local namespace, then access with locals() later.
+        # There is probably a more concise solution with os.listdir()
         if self.cb == "Earth":
             from PlanetEphems.Earth import Earth
         elif self.cb == "Mars":

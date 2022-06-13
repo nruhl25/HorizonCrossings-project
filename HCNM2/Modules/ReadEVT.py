@@ -132,7 +132,7 @@ class ReadEVT:
 
 
 if __name__ == '__main__':
-    from ObservationDictionaries.v4641NICER import v4641 as obs_dict
+    from ObservationDictionaries.NICER.v4641NICER import v4641 as obs_dict
     import matplotlib.pyplot as plt
 
     obj = ReadEVT(obs_dict)

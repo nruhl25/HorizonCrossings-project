@@ -15,8 +15,8 @@ from AnalyzeCrossing import AnalyzeCrossing
 cb_str = "Earth"
 hc_type = "rising"
 N0 = 244 # average number of unattenuated counts in data
-E_kev = 1.5
-H = 420  # km, orbital altitude
+E_kev = 5
+H = 2000  # km, orbital altitude
 bin_size = 1
 comp_range = [0.01, 0.99] # range of transmittance in which to compare the curves
 
@@ -92,9 +92,13 @@ class CurveComparison:
         if self.hc_type == "setting":
             time_crossing_data = self.time_data[t0_1_index-len(self.time_model):t0_1_index]
             rate_data = self.N0*self.transmit_data[t0_1_index-len(self.time_model):t0_1_index]
+            transmit_data = self.transmit_data[t0_1_index -
+                                               len(self.time_model):t0_1_index]
         elif self.hc_type == "rising":
             time_crossing_data = self.time_data[t0_1_index:t0_1_index+len(self.time_model)]
             rate_data = self.N0*self.transmit_data[t0_1_index:t0_1_index+len(self.time_model)]
+            transmit_data = self.transmit_data[t0_1_index -
+                                               len(self.time_model):t0_1_index]
 
         # bin size must be greater than 2
         t_start_list = np.arange(int(self.time_data[t0_1_index])-2,
@@ -187,8 +191,8 @@ if __name__ == '__main__':
              label=fr"Minimum: $t_{{0,e}}$ = {comp_obj.t0_e:.2f} +/- {comp_obj.dt_e:.2f} sec")
     plt.ylabel(r"$\chi^2$")
     plt.xlabel(r"$t_0$ (sec)")
-    plt.ylim([46.5, 48.5])
-    plt.xlim([1999.66-0.15, 1999.66+0.15])
+    # plt.ylim([46.5, 48.5])
+    # plt.xlim([1999.66-0.15, 1999.66+0.15])
     plt.legend()
 
     plt.show()

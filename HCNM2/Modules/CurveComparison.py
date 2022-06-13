@@ -59,15 +59,18 @@ class CurveComparison:
         if self.hc_type == "setting":
             time_crossing_data = self.time_data[t0_1_index-len(self.time_model):t0_1_index]
             rate_data = self.rate_data[t0_1_index-len(self.time_model):t0_1_index]
+            transmit_data = rate_data / self.N
         elif self.hc_type == "rising":
             time_crossing_data = self.time_data[t0_1_index:t0_1_index+len(self.time_model)]
             rate_data = self.rate_data[t0_1_index:t0_1_index+len(self.time_model)]
+            transmit_data = rate_data / self.N
 
         # bin size must be greater than 2
         t_start_list = np.arange(int(self.time_data[t0_1_index])-2,
                                  int(self.time_data[t0_1_index])+2,
                                  desired_precision)
 
+        # My first impression would be to used transmit_data below, but this leads to problems...
         weight_range = np.where((self.transmit_model >= CurveComparison.comp_range[0]) & (self.transmit_model <= CurveComparison.comp_range[1]))[0]
 
         chisq_list = np.zeros(len(t_start_list))
@@ -79,13 +82,13 @@ class CurveComparison:
                 time_crossing_model = np.flip(t0_guess - self.time_model)
 
             # Note that however this interpolation is done, the model and data times need to be in the same order
-            model_rate_vs_time = interp1d(time_crossing_model, self.N*self.transmit_model, kind='cubic', fill_value='extrapolate')
-            model_rate_interp = model_rate_vs_time(time_crossing_data)
+            model_rate_vs_time = interp1d(time_crossing_model, self.N*self.transmit_model, kind='linear')
+            model_rate_interp = model_rate_vs_time(time_crossing_data[weight_range])
             # List of model values at times where data points are
 
             # Chi-squared test in weight_range of full curve
             chisq = np.sum(
-                (rate_data[weight_range] - model_rate_interp[weight_range]) ** 2 / model_rate_interp[weight_range])
+                (rate_data[weight_range] - model_rate_interp) ** 2 / model_rate_interp)
             chisq_list[indx] = chisq
 
         t0_e = t_start_list[np.argmin(chisq_list)]
@@ -124,5 +127,10 @@ class CurveComparison:
         return c
 
     def chisq_vs_time(self, t0):
-        func = interp1d(self.t0_guess_list, self.chisq_list, kind='cubic', fill_value='extrapolate')
+        func = interp1d(self.t0_guess_list, self.chisq_list, kind='linear', fill_value='extrapolate')
         return func(t0)
+
+    # class method to change curve comparison range
+    @classmethod
+    def set_comp_range(cls, comp_range):
+        cls.comp_range = comp_range

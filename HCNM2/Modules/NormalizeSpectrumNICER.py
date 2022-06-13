@@ -2,7 +2,6 @@
 # This class reads NICER's .evt file and normalizes the source spectrum in the specified en_range for use in TransmitModel.py
 
 import numpy as np
-from astropy.table import Table
 from scipy.fft import fft, ifft
 from scipy.interpolate import interp1d
 
@@ -132,8 +131,7 @@ class NormalizeSpectrumNICER:
 # Example code to test this calss
 if __name__ == '__main__':
     from ReadEVT import ReadEVT
-    from ObservationDictionaries.v4641NICER import v4641NICER
-    from ObservationDictionaries.crabNICER import crabNICER
+    from ObservationDictionaries.NICER.crabNICER import crabNICER
 
     obs_dict = crabNICER
     e_band = [1.0, 2.0]  # keV
