@@ -14,15 +14,16 @@ from AnalyzeCrossing import AnalyzeCrossing
 # Global parameters to be used in the analysis
 cb_str = "Earth"
 hc_type = "rising"
-N0 = 244 # average number of unattenuated counts in data
-E_kev = 5
-H = 2000  # km, orbital altitude
+N0 = 244  # average number of unattenuated counts in data
+E_kev = 1.5
+H = 4000  # km, orbital altitude
 bin_size = 1
-comp_range = [0.01, 0.99] # range of transmittance in which to compare the curves
+comp_range = [0.01, 0.99]  # range of transmittance in which to compare the curves
 
 # Parameters involved in generating hc data
 std = 0.05  # standard deviation of normally-distributed noise
 np.random.seed(3)
+
 
 # This function generates the horizon crossing times and transmittance arrays for both model and data
 def generate_crossings(sat, hc_type):
@@ -32,6 +33,7 @@ def generate_crossings(sat, hc_type):
         time_model = np.flip(time_model)
 
     transmit_model = sat.calc_transmit_curve(time_model)
+
     transmit_data = transmit_model.copy()
 
     if hc_type == "rising":
@@ -48,7 +50,8 @@ def generate_crossings(sat, hc_type):
     time_data = np.arange(2000-100, 2000+sat.time_final+100, bin_size)
     return time_model, transmit_model, time_data, transmit_data
 
-# This calss executes the curve CurveComparison
+
+# This class executes the curve CurveComparison
 class CurveComparison:
     def __init__(self, sat, hc_type, N0):
         self.sat = sat
@@ -57,6 +60,7 @@ class CurveComparison:
         self.time_model, self.transmit_model, self.time_data, self.transmit_data = generate_crossings(self.sat, self.hc_type)
         # First step to identify t0
         self.t0_1 = self.locate_t0_step1()
+        self.t0_new = self.locate_t0_alternative()
         self.t0_e, self.t0_guess_list, self.chisq_list = self.locate_t0_step2()
         self.dt_e = self.analyze_chisq()
 
@@ -100,9 +104,8 @@ class CurveComparison:
             transmit_data = self.transmit_data[t0_1_index -
                                                len(self.time_model):t0_1_index]
 
-        # bin size must be greater than 2
-        t_start_list = np.arange(int(self.time_data[t0_1_index])-2,
-                                 int(self.time_data[t0_1_index])+2,
+        t_start_list = np.arange(self.t0_1-1,
+                                 self.t0_1+1,
                                  desired_precision)
 
         weight_range = np.where((self.transmit_model >= comp_range[0]) & (self.transmit_model <= comp_range[1]))[0]
@@ -114,15 +117,20 @@ class CurveComparison:
                 time_crossing_model = np.arange(t0_guess, t0_guess + self.sat.time_final, bin_size)
             elif self.hc_type == "setting":
                 time_crossing_model = np.flip(np.arange(t0_guess, t0_guess - self.sat.time_final, -bin_size))
+            else:
+                continue
 
             # Note that however this interpolation is done, the model and data times need to be in the same order
-            model_rate_vs_time = interp1d(time_crossing_model, self.N0*self.transmit_model, kind='cubic', fill_value='extrapolate')
-            model_rate_interp = model_rate_vs_time(time_crossing_data)
+            model_rate_vs_time = interp1d(time_crossing_model, self.N0*self.transmit_model, kind='cubic')
+            model_rate_interp = model_rate_vs_time(time_crossing_data[weight_range])
             # List of model values at times where data points are
+
+            if any(model_rate_interp <= 0):
+                print("Cubic spline went negative")
 
             # Chi-squared test in weight_range of full curve
             chisq = np.sum(
-                (rate_data[weight_range] - model_rate_interp[weight_range]) ** 2 / model_rate_interp[weight_range])
+                (rate_data[weight_range] - model_rate_interp) ** 2 / model_rate_interp)
             chisq_list[indx] = chisq
 
         t0_e = t_start_list[np.argmin(chisq_list)]
@@ -161,15 +169,30 @@ class CurveComparison:
         return c
 
     def chisq_vs_time(self, t0):
-        func = interp1d(self.t0_guess_list, self.chisq_list, kind='cubic', fill_value='extrapolate')
+        func = interp1d(self.t0_guess_list, self.chisq_list, kind='cubic', fill_value="extrapolate")
         return func(t0)
+
+    def locate_t0_alternative(self):
+        # Same method as locate_t0_step1(), but for multiple points in the transmission curve
+        cross_range = np.where((self.transmit_data >= 0.1) & (self.transmit_data <= 0.8))[0]
+        t_data_range = self.time_data[cross_range]
+
+        dt_model_list = self.time_vs_transmit_model(self.transmit_data[cross_range])
+
+        if self.hc_type == "rising":
+            t0_new_list = t_data_range - dt_model_list
+        elif self.hc_type == "setting":
+            t0_new_list = t_data_range + dt_model_list
+        print(t0_new_list)
+        return np.mean(t0_new_list)
+
 
 if __name__ == '__main__':
 
     sat = AnalyzeCrossing(cb_str, H, E_kev)
     comp_obj = CurveComparison(sat, hc_type, N0=N0)
 
-    print(f"First guess t0_1 = {comp_obj.t0_1:.2f} sec")
+    print(f"First guess t0_1 = {comp_obj.t0_1:.2f} sec, t0_new = {comp_obj.t0_new:.2f} sec")
     print(f"Best fit t0_e = {comp_obj.t0_e:.2f} +/- {comp_obj.dt_e:.2f} sec")
 
     if hc_type == "setting":
@@ -191,8 +214,8 @@ if __name__ == '__main__':
              label=fr"Minimum: $t_{{0,e}}$ = {comp_obj.t0_e:.2f} +/- {comp_obj.dt_e:.2f} sec")
     plt.ylabel(r"$\chi^2$")
     plt.xlabel(r"$t_0$ (sec)")
-    # plt.ylim([46.5, 48.5])
-    # plt.xlim([1999.66-0.15, 1999.66+0.15])
+    plt.ylim([min(comp_obj.chisq_list)-0.5, min(comp_obj.chisq_list)+2])
+    plt.xlim([min(comp_obj.t0_guess_list), max(comp_obj.t0_guess_list)])
     plt.legend()
 
     plt.show()

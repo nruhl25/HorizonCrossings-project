@@ -7,6 +7,7 @@ import sys
 sys.path.append("/Users/nathanielruhl/Desktop/HorizonCrossings-Summer22/nruhl_final_project/HCNM_Analysis/")
 import tools as tools
 
+
 # This class contains info for the orbservation and corresponding circular orbit
 class ObservationOrbit:
     t_step_size = 0.01

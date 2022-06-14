@@ -66,8 +66,8 @@ class CurveComparison:
             transmit_data = rate_data / self.N
 
         # bin size must be greater than 2
-        t_start_list = np.arange(int(self.time_data[t0_1_index])-2,
-                                 int(self.time_data[t0_1_index])+2,
+        t_start_list = np.arange(self.t0_1-2,
+                                 self.t0_1+2,
                                  desired_precision)
 
         # My first impression would be to used transmit_data below, but this leads to problems...
@@ -82,8 +82,10 @@ class CurveComparison:
                 time_crossing_model = np.flip(t0_guess - self.time_model)
 
             # Note that however this interpolation is done, the model and data times need to be in the same order
-            model_rate_vs_time = interp1d(time_crossing_model, self.N*self.transmit_model, kind='linear')
+            model_rate_vs_time = interp1d(time_crossing_model, self.N*self.transmit_model, kind='cubic')
             model_rate_interp = model_rate_vs_time(time_crossing_data[weight_range])
+            if any(model_rate_interp <= 0):
+                print("Cubic spline went negative")
             # List of model values at times where data points are
 
             # Chi-squared test in weight_range of full curve

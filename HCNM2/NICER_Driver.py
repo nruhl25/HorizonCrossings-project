@@ -20,7 +20,7 @@ import numpy as np
 
 
 def main():
-    obs_dict = crabNICER
+    obs_dict = v4641NICER
     # e_band = [1.0, 2.0]  # keV
     bin_size = 1.0   # sec
     e_band_array = np.array([[1.0, 2.0],

@@ -11,16 +11,17 @@ from AnalyzeCrossing import AnalyzeCrossing
 from tcc_slide import CurveComparison, generate_crossings
 
 # Global variables
-N = 244 # average number of unattenuated counts in data
+N = 244  # average number of unattenuated counts in data
 bin_size = 1
-comp_range = [0.01, 0.99] # range of transmittance in which to compare the curves
+comp_range = [0.01, 0.99]  # range of transmittance in which to compare the curves
 cb_str = "Earth"
-E_kev = 1.5 # keV
+E_kev = 1.5  # keV
 hc_type = "rising"
+
 
 def main():
     altitude_list = np.arange(400, 2100, 100)
-    dt_list = np.zeros_like(altitude_list, np.float)  
+    dt_list = np.zeros_like(altitude_list, float)
     dr_list = np.zeros_like(dt_list) # lists containing uncertainties corresponding to altitude_list
 
     for i, alt in enumerate(altitude_list):
@@ -47,6 +48,7 @@ def main():
 
     plt.show()
     return 0
+
 
 if __name__ == '__main__':
     import time

@@ -7,12 +7,13 @@ import numpy as np
 # import local modules
 from Planet import Planet, G
 
+
 class Orbit(Planet):
     def __init__(self, cb, H):
         Planet.__init__(self, cb)
         self.H = H   # km, orbital altitude
         self.R_orbit = self.R + self.H   # km, orbital radius
-        self.T = self.radius_to_period() # sec, orbital period
+        self.T = self.radius_to_period()  # sec, orbital period
         self.omega = 2*np.pi/self.T    # rad/sec, angular velocity
         self.theta = np.arcsin(self.R/self.R_orbit)  # rad, angle characteristic angle of the orbit and central body
 
@@ -30,7 +31,7 @@ class Orbit(Planet):
     # Functions for Kepler's Law
     # Functions for Kepler's Law, semi-major axis (a, R_orbit for a circle) and orbital period (T), using known mass of earth
 
-    def period_to_a(T):
+    def period_to_a(self, T):
         a = (((T ** 2) * G * self.M /
             (4 * np.pi ** 2)) ** (1. / 3)) / (10 ** 3)  # km
         return a
@@ -47,6 +48,7 @@ class Orbit(Planet):
         tf = self.epsilon_final/self.omega
         return tf
 
+
 if __name__ == "__main__":
     ISS = Orbit(cb="Earth", H=420)
-    print(ISS.R_orbit)
+    print(ISS.time_final)

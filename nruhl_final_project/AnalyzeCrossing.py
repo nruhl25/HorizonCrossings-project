@@ -8,10 +8,11 @@ from Orbit import Orbit
 from xsects import BCM
 from gaussxw import gaussxwab
 
+
 class AnalyzeCrossing(Orbit):
 
     def __init__(self, cb, H, E_kev=4.0):
-        Orbit.__init__(self, cb, H) # instansiates both Orbit and Planet classes
+        Orbit.__init__(self, cb, H)  # instansiates both Orbit and Planet classes
         self._E_kev = E_kev  # default energy, keV
         self._sigma = BCM.get_total_xsect(
             self.E_kev, self.mix_N, self.mix_O, self.mix_Ar, self.mix_C)  # default sigma
@@ -72,11 +73,11 @@ class AnalyzeCrossing(Orbit):
 
     def rho_vs_x(self, x_km, t):
         z_km = self.x_to_z(x_km, t)  # radial altitude above Earth
-        rho = self.rho_vs_z(z_km, t)   # g/cm^3, mass density
+        rho = self.rho_vs_z(z_km)   # g/cm^3, mass density
         return rho
 
     # Exponential density as a function of altitude (km)
-    def rho_vs_z(self, z_km, t):
+    def rho_vs_z(self, z_km):
         rho = self.rho0*np.exp(-z_km/self.scale_height)
         return rho
 
