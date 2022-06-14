@@ -32,7 +32,7 @@ def main():
 
     # 2) LocateR0hc (must know hc_type here, R_orbit and h_unit defined within the class)
     r0_obj = LocateR0hc(obs_dict, r_array, v_array, t_array)
-    t0_model_index, lat_gp, lon_gp = r0_obj.return_orbit_data()
+    t0_model_index, lat_gp, lon_gp = r0_obj.return_r0_data()
     del r0_obj
 
     v0 = v_array[t0_model_index]

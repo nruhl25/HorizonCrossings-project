@@ -47,7 +47,7 @@ class LocateR0hc:
         return A_2d, r0_2d
 
     def get_t0_guess_indices(self):
-        r0_guess_indices = np.isclose(self.r_array, self.r0_2d, 0.005)
+        r0_guess_indices = np.isclose(self.r_array, self.r0_2d, 0.05)
 
         # 0.5% corresponds to ~15km or more for each component (0.005*3000=15)
 
@@ -56,7 +56,6 @@ class LocateR0hc:
         for index, value in enumerate(r0_guess_indices):
             if all(value) == True:
                 t0_guess_list.append(index)
-
         # get the positions that corresponds to the t0 list
         # t0 indices are for r_array
         r0_guess_list = self.r_array[min(t0_guess_list):max(t0_guess_list)+1]
@@ -77,6 +76,7 @@ class LocateR0hc:
     # Locate r0 via aligning the LOS to be tangent to earth
     def locate_r0_numerical(self):
         # Loop through different times, different lines of sight during the crossing
+        print(constants.R_EARTH)
         for time_index, t0_model_index in enumerate(self.t0_guess_list):
             # Lists to check radial altitude at different points along the LOS
             n_list = np.arange(0, LocateR0hc.max_los_dist, LocateR0hc.n_step_size)
@@ -109,9 +109,10 @@ class LocateR0hc:
                     graze_phi = phi_list[n_graze_index]   # polar angle at graze_point
                     return self.r0_guess_list[time_index], t0_model_index, graze_point, A_3d
                 else:
-                    # keep moving through time until the whole LOS is above earth
                     continue
+                    # keep moving through time until the whole LOS is above earth
             elif self.hc_type == "setting":
+                print(np.min(los_mag_list))
                 if any(los_mag_list <= earth_radius_list):
                     # Find the point of closest approach, the tangent point
                     n_graze_index = np.argmin(los_mag_list)
@@ -128,7 +129,7 @@ class LocateR0hc:
         return 0, 0, 0, 0
 
     # Used in HCNM Driver
-    def return_orbit_data(self):
+    def return_r0_data(self):
         return self.t0_model_index, self.lat_gp, self.lon_gp
 
     # Function used to define R_orbit and h_unit at mid_time_crossing

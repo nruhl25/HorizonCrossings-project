@@ -15,9 +15,11 @@ import Modules.MSIS as MSIS
 # INPUTS (9 total):
 # obs_dict
 # orbit_derived_inputs = (r_array, t_array, t0_model_index, lat_gp, lon_gp)
-# eband_derived_inputs = (e_band, bin_size, normalized_amplitudes, bin_centers). normalized_amplitudes and bin_centers: Information from source spectrum. For NICER, they are defined in NormalizeSpectrumNICER.py, and for RXTE, they are defined in text files
+# eband_derived_inputs = (e_band, bin_size, normalized_amplitudes, bin_centers).
+# normalized_amplitudes and bin_centers: Information from source spectrum.
+# For NICER, they are defined in NormalizeSpectrumNICER.py, and for RXTE, they are defined in .npy
 
-# OUTPUTS (2): transmit_model array and time_crossing_model array
+# OUTPUTS (2) of TransmitModel.calculate_transmit_model(): transmit_model array and time_crossing_model array
 
 
 class TransmitModel:
@@ -27,7 +29,7 @@ class TransmitModel:
     mix_Ar = 0.01
 
     dE = 0.25  # keV, default step size for the effective transmittance model
-    dx = 0.0005  # keV, energy step size (within a step of constant cross section) to calc probability under the normalized spectrum
+    dx = 0.0005  # keV, energy step size (in a step of const xsect) to calc probability under the normalized spectrum
 
     ds_km = 0.5   # km, step size along the telescopic LOS
 
@@ -41,7 +43,7 @@ class TransmitModel:
         self.time_step_r = self.t_array[1] - self.t_array[0]  # time step in r_array and t_array
 
         self.time_final = 200   # There is a more general way to define this
-        self.time_crossing_model = np.arange(0, self.time_final, self.bin_size)
+        self.time_crossing_model = np.arange(0, self.time_final, self.bin_size, float)
 
     def calculate_transmit_model(self):
 
@@ -53,7 +55,7 @@ class TransmitModel:
         density_array, density_tp_list = self.calculate_density_arrays(s_list_km)
 
         # effective transmittance model
-        effective_transmit = np.zeros_like(self.time_crossing_model)  # list of transmittance over time of crossing
+        effective_transmit = np.zeros_like(self.time_crossing_model, float)  # list of transmittance over time of crossing
         en1_list = np.arange(self.e_band[0], self.e_band[1], TransmitModel.dE)  # left side of constant sigma steps on spectrum
         en2_list = en1_list + TransmitModel.dE  # right side of constant sigma steps
         for i in range(len(en1_list)):

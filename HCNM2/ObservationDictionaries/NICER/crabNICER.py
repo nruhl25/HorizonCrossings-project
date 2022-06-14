@@ -14,8 +14,8 @@ crabNICER = {   # BASIC OBSERVATION INFO
             "hc_type": "rising",
 
             # USER-ENTERED INFORMATION (Identify in NICER_Analysis.Step1.py and space weather tables)
-            "crossing_time_range": np.array([240165000, 240165500]),  # seconds in MET
-            "spectrum_time_range": np.array([240165300, 240165400]),
+            "crossing_time_range": np.array([240165000.0, 240165500.0]),  # seconds in MET
+            "spectrum_time_range": np.array([240165300.0, 240165400.0]),
             "f107": 75.2,
             "ap": 2,
 

@@ -10,7 +10,7 @@ from scipy.interpolate import interp1d
 # e_band: [1.0, 2.0], energy with which to normaliz the spectrum
 
 # IMPORTANT ATTRIBUTES:
-# self.normalized_counts
+# self.normalized_amplitudes
 # self.bin_centers  [keV]
 
 
@@ -19,6 +19,7 @@ class NormalizeSpectrumNICER:
     FREQ_MAX = 20  # max frequency index in the fourier transform of the smoothed spectrum
     DX_FULL_EBAND_INTEGRATION = 0.05  # keV, steps for calculating area under the user-inputted energy range
     DX_PROBABILITY_INTEGRATION = 0.0005  # keV, steps (within a step of constant cross section) to calc probability
+    # (not used in this script)
     hist_bins = 100
 
     def __init__(self, evt_obj, e_band):
@@ -94,6 +95,7 @@ class NormalizeSpectrumNICER:
 
     # FUNCTION: Takes in a range of energies in keV, returns a probability from the normalized spectrum
     # en1 and en2 are located inside self.en_lower_kev and self.en_upper_kev
+    # THIS FUNCTION IS USED WHEN CALCULATING THE TRANSMITTANCE CURVE IN TRANSMITMODEL.PY
     def calc_spectrum_probability(self, en1_kev, en2_kev):
 
         # en1 can't be below 0.27 keV because there are no counts below that
