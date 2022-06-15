@@ -15,7 +15,7 @@ from pathlib import Path
 cwd = str(Path(__file__).parents[0])  # HCNM2/ is cwd
 
 obs_dict = dict_60079
-e_band = [4.0, 6.0]  # keV
+e_band = [0.6090724966654062, 1.5]  # keV
 bin_size = 1.0
 
 # # 1) Define orbit model
@@ -36,17 +36,21 @@ orbit_derived_inputs = (r_array, t_array, t0_model_index, lat_gp, lon_gp)
 timeRate = np.load(cwd + "/Data/RXTE/60079/7_9_matrices/7_9_rateTime.npy")
 ampCenters = np.load(cwd + "/Data/RXTE/60079/7_9_matrices/7_9_ampCenters.npy")
 
-time_data = timeRate[0, :]
-rate_data = timeRate[1, :]
-normalized_amplitudes = ampCenters[:, 0]
-bin_centers = ampCenters[:, 1]
+time_data = timeRate[1, :]
+rate_data = timeRate[0, :]
+normalized_amplitudes = ampCenters[0, :]
+bin_centers = ampCenters[1, :]
 
-unattenuated_rate = 213  # 1852 for test_obs
+unattenuated_rate = 213
 
 eband_derived_inputs = (e_band, bin_size, normalized_amplitudes, bin_centers)
-#
+
 model_obj = TransmitModel(obs_dict, orbit_derived_inputs, eband_derived_inputs)
 transmit_model, time_crossing_model = model_obj.calculate_transmit_model()
+
+import matplotlib.pyplot as plt
+plt.plot(time_crossing_model, transmit_model, '.')
+plt.show()
 
 # 4)
 model_and_data_tuple = (time_crossing_model, transmit_model, time_data, rate_data, unattenuated_rate)

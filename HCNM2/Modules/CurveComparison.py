@@ -37,6 +37,7 @@ class CurveComparison:
     def locate_t0_step1(self):
         if self.hc_type == "setting":
             index50_approx_data = np.where(self.transmit_data < 0.51)[0][0]
+            print(index50_approx_data)
         elif self.hc_type == "rising":
             index50_approx_data = np.where(self.transmit_data > 0.49)[0][0]
         transmit50_approx_data = self.transmit_data[index50_approx_data]
@@ -56,9 +57,11 @@ class CurveComparison:
         t0_1_index = np.where(self.time_data >= self.t0_1)[0][0]
 
         # Define the data points in the full crossing time range
+        for i in range(1):
+            print("hi")
         if self.hc_type == "setting":
-            time_crossing_data = self.time_data[t0_1_index-len(self.time_model):t0_1_index]
-            rate_data = self.rate_data[t0_1_index-len(self.time_model):t0_1_index]
+            time_crossing_data = self.time_data[t0_1_index-len(self.time_model)+1:t0_1_index+1]
+            rate_data = self.rate_data[t0_1_index-len(self.time_model)+1:t0_1_index+1]
             transmit_data = rate_data / self.N
         elif self.hc_type == "rising":
             time_crossing_data = self.time_data[t0_1_index:t0_1_index+len(self.time_model)]

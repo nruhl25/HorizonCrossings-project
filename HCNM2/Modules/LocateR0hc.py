@@ -18,6 +18,10 @@ class LocateR0hc:
         self.hc_type = obs_dict["hc_type"]
         self.starECI = obs_dict["starECI"]
         self.crossing_time_range = obs_dict["crossing_time_range"]
+        if obs_dict["detector"] == "NICER":
+            self.year0 = 2014
+        elif obs_dict["detector"] == "RXTE":
+            self.year0 = 1994
         self.r_array = r_array
         self.v_array = v_array
         self.t_array = t_array
@@ -32,7 +36,7 @@ class LocateR0hc:
         # Other useful variables
         self.g_unit = self.graze_point / np.linalg.norm(self.graze_point)
         self.t0_model = t_array[self.t0_model_index]
-        self.lat_gp, self.lon_gp, _ = tools.eci2geodetic_pymap(self.graze_point, self.t0_model, obs_dict['detector'])
+        self.lat_gp, self.lon_gp, _ = tools.eci2geodetic_pymap_vector(self.graze_point, self.t0_model, self.year0)
 
     def get_initial_guess(self):
         starECI_proj = tools.proj_on_orbit(self.starECI, self.h_unit)

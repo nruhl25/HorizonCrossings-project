@@ -9,6 +9,7 @@ cwd = str(Path(__file__).parents[2])  # HCNM2/ is cwd
 # code for the driver, reading in the data files:
 # timeRate = np.load(cwd + "/Data/RXTE/obsid_test/test_ch_7_9/7_9_timeRate.npy")  # note that this is flipped from what Jacob will do
 # ampCenters = np.load(cwd + "/Data/RXTE/obsid_test/test_ch_7_9/7_9_ampCenters.npy")
+# unnattenuated rate
 
 test_obs = {   # BASIC OBSERVATION INFO
             "detector": "RXTE",

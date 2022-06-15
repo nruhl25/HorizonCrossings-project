@@ -1,14 +1,17 @@
 # Author: Nathaniel Ruhl
 # This library contains various tools for the analysis
 
+import Modules.constants as constants
+
 import math as m
 import numpy as np
 import datetime
 import pymap3d as pm
 import numbers
 
-import Modules.constants as constants
-
+# Optimize pymap3d and astropy operations
+from astropy.utils import iers   # cannot go before 1962
+iers.conf.auto_download = False
 
 # This function converts seconds from Jan 1 2014 into a datetime in UTC
 def convert_time_NICER(time):
@@ -43,30 +46,22 @@ def convert_time_RXTE(time):
     else:
         raise RuntimeError('time must be MET number or array/list of times')
 
+# This function does the above 2 conversions together
+def convert_time(time, year0):
+    timezero = datetime.datetime(year=year0, month=1,
+                                 day=1, hour=0, minute=0, second=0)
+    if isinstance(time, numbers.Real):
+        new_time = timezero + datetime.timedelta(seconds=time)
+        return new_time
+    elif isinstance(time, list) or isinstance(time, np.ndarray):
+        new_time_list = []
+        for index, t in enumerate(time):
+            new_time = timezero + datetime.timedelta(seconds=t)
+            new_time_list.append(new_time)
+        return np.array(new_time_list)
+    else:
+        raise RuntimeError('time must be MET number or array/list of times')
 
-# This matrix transforms an ECI vector into the perifocal frame {p,q,h}
-def get_Q_matrix(i, raan, aop, hc_type):
-    p_eci = np.array([m.cos(raan) * m.cos(aop) - m.sin(raan) * m.sin(aop) * m.cos(i),
-    m.sin(raan) * m.cos(aop) + m.cos(raan) * m.cos(i) * m.sin(aop),
-    m.sin(i) * m.sin(aop)])
-
-    q_eci = np.array([-m.cos(raan) * m.sin(aop) - m.sin(raan) * m.cos(i) * m.cos(aop),
-    -m.sin(raan) * m.sin(aop) + m.cos(raan) * m.cos(i) * m.cos(aop),
-    m.sin(i) * m.cos(aop)])
-
-    h_eci = np.array([m.sin(raan) * m.sin(i),
-    -m.cos(raan) * m.sin(i),
-    m.cos(i)])
-
-    if hc_type == "rising":
-        Q = np.array([list(p_eci),
-                    list(q_eci),
-                    list(h_eci)])
-    elif hc_type == "setting":
-        Q = np.array([list(q_eci),
-                    list(p_eci),
-                    list(-h_eci)])
-    return Q
 
 # This function returns the pole vector in eci coordinates
 def get_h_unit(i, raan, aop):
@@ -74,6 +69,7 @@ def get_h_unit(i, raan, aop):
     -m.cos(raan) * m.sin(i),
     m.cos(i)])
     return h_eci
+
 
 # Transforms RA/DEC into an ECI unit vector
 def celestial_to_geocentric(alpha, delta):
@@ -127,35 +123,21 @@ def point_on_earth(theta_list, phi_list):
         return np.hstack((x, y, z))
 
 
-# This function takes in an array of eci points (in km) and returns latitude, longitude, and altitude using pymap3d
+# The functions below take in eci points (in km) and return latitude, longitude, and altitude using pymap3d
 #  note that time seconds is a single time, float number
-def eci2geodetic_pymap(los_point_array, time_seconds, detector):
-    if detector == "NICER":
-        if los_point_array.ndim == 1:
-            los_point_m = los_point_array * 1000  # convert to [m]
-            lat, lon, alt = pm.eci2geodetic(los_point_m[0], los_point_m[1], los_point_m[2], convert_time_NICER(time_seconds))
-            # return altitude in km, lat and lon in degrees
-            return lat, lon, alt / 1000
-        else:
-            # multiple los_points, time_seconds is either a number or array
-            print(time_seconds)
-            los_point_array_m = los_point_array * 1000  # convert to [m]
-            lats, lons, alts = pm.eci2geodetic(los_point_array_m[:, 0], los_point_array_m[:, 1], los_point_array_m[:, 2], convert_time_NICER(time_seconds))
-            return lats, lons, alts / 1000
-    elif detector == "RXTE":
-        if los_point_array.ndim == 1:
-            los_point_m = los_point_array * 1000  # convert to [m]
-            lat, lon, alt = pm.eci2geodetic(los_point_m[0], los_point_m[1], los_point_m[2],
-                                            convert_time_RXTE(time_seconds))
-            # return altitude in km, lat and lon in degrees
-            return lat, lon, alt / 1000
-        else:
-            # multiple los_points, time_seconds is either a number or array
-            print(time_seconds)
-            los_point_array_m = los_point_array * 1000  # convert to [m]
-            lats, lons, alts = pm.eci2geodetic(los_point_array_m[:, 0], los_point_array_m[:, 1],
-                                               los_point_array_m[:, 2], convert_time_RXTE(time_seconds))
-            return lats, lons, alts / 1000
 
-    else:
-        raise RuntimeWarning("'detector' user input is not valid")
+# multiple los_points, time_seconds is either a number or array
+def eci2geodetic_pymap_array(los_point_array, time_seconds, year0):
+        los_point_array_m = los_point_array * 1000  # convert to [m]
+        lats, lons, alts = pm.eci2geodetic(los_point_array_m[:, 0], los_point_array_m[:, 1], los_point_array_m[:, 2], convert_time(time_seconds, year0))
+        return lats, lons, alts / 1000
+
+
+# single los point to be converted
+def eci2geodetic_pymap_vector(los_point_km, time_seconds, year0):
+    los_point_m = los_point_km * 1000  # convert to [m]
+    lat, lon, alt = pm.eci2geodetic(los_point_m[0], los_point_m[1], los_point_m[2], convert_time(time_seconds, year0))
+    # return altitude in km, lat and lon in degrees
+    return lat, lon, alt / 1000
+
+
