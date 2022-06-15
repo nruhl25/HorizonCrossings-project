@@ -32,7 +32,7 @@ class LocateR0hc:
         # Other useful variables
         self.g_unit = self.graze_point / np.linalg.norm(self.graze_point)
         self.t0_model = t_array[self.t0_model_index]
-        self.lat_gp, self.lon_gp, _ = tools.eci2geodetic_pymap(self.graze_point, self.t0_model)
+        self.lat_gp, self.lon_gp, _ = tools.eci2geodetic_pymap(self.graze_point, self.t0_model, obs_dict['detector'])
 
     def get_initial_guess(self):
         starECI_proj = tools.proj_on_orbit(self.starECI, self.h_unit)
@@ -76,7 +76,7 @@ class LocateR0hc:
     # Locate r0 via aligning the LOS to be tangent to earth
     def locate_r0_numerical(self):
         # Loop through different times, different lines of sight during the crossing
-        print(constants.R_EARTH)
+        # print(constants.R_EARTH)
         for time_index, t0_model_index in enumerate(self.t0_guess_list):
             # Lists to check radial altitude at different points along the LOS
             n_list = np.arange(0, LocateR0hc.max_los_dist, LocateR0hc.n_step_size)
@@ -99,6 +99,7 @@ class LocateR0hc:
                     hc_type = "setting"
 
             # Check if we reached the tangent grazing point
+            # print(np.min(los_mag_list))
             if self.hc_type == "rising":
                 if all(los_mag_list >= earth_radius_list):
                     # Find the point of closest approach, the tangent point
@@ -112,7 +113,6 @@ class LocateR0hc:
                     continue
                     # keep moving through time until the whole LOS is above earth
             elif self.hc_type == "setting":
-                print(np.min(los_mag_list))
                 if any(los_mag_list <= earth_radius_list):
                     # Find the point of closest approach, the tangent point
                     n_graze_index = np.argmin(los_mag_list)

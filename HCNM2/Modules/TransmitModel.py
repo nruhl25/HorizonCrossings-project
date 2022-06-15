@@ -79,8 +79,7 @@ class TransmitModel:
 
         for t_index, time in enumerate(self.time_crossing_model):
             los_points_km = self.line_of_sight(t_index, s_list_km)
-
-            lat_list_deg_pymap, lon_list_deg_pymap, altitude_list_pymap = tools.eci2geodetic_pymap(los_points_km, mid_time_crossing)
+            lat_list_deg_pymap, lon_list_deg_pymap, altitude_list_pymap = tools.eci2geodetic_pymap(los_points_km, mid_time_crossing, self.obs_dict["detector"])
             # Only consider half of the LOS
             tangent_point_index = np.argmin(altitude_list_pymap)
             # print(altitude_list_pymap[tangent_point_index]) TANGENT ALTITUDE

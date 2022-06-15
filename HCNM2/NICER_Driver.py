@@ -23,9 +23,7 @@ def main():
     obs_dict = v4641NICER
     # e_band = [1.0, 2.0]  # keV
     bin_size = 1.0   # sec
-    e_band_array = np.array([[1.0, 2.0],
-                             [2.0, 3.0],
-                             [3.0, 4.0]])
+    e_band_array = np.array([[1.0, 2.0]])
 
     # 1) Define orbit model
     r_array, v_array, t_array = OrbitModel.define_orbit_model(obs_dict, "mkf", time_step=0.01)
@@ -51,16 +49,11 @@ def main():
         normalized_amplitudes, bin_centers = spec_obj.return_spectrum_data()
         del evt_obj
         del spec_obj
-
-        # 5) RXTE Analysis starts here.
+        # 5)
         eband_derived_inputs = (e_band, bin_size, normalized_amplitudes, bin_centers)
 
         model_obj = TransmitModel(obs_dict, orbit_derived_inputs, eband_derived_inputs)
         transmit_model, time_crossing_model = model_obj.calculate_transmit_model()
-
-        # GENERATE DATA IF NEEDED
-        # time_crossing_model = np.arange(0, 300, bin_size)
-        # transmit_model = np.exp(-np.exp(-time_crossing_model+20))
 
         # 6)
         model_and_data_tuple = (time_crossing_model, transmit_model, time_data, rate_data, unattenuated_rate)

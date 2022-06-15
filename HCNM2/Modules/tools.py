@@ -9,12 +9,30 @@ import numbers
 
 import Modules.constants as constants
 
+
 # This function converts seconds from Jan 1 2014 into a datetime in UTC
 def convert_time_NICER(time):
     timezero = datetime.datetime(year=2014, month=1,
                                  day=1, hour=0, minute=0, second=0)
     if isinstance(time, numbers.Real):
         new_time = timezero+datetime.timedelta(seconds=time)
+        return new_time
+    elif isinstance(time, list) or isinstance(time, np.ndarray):
+        new_time_list = []
+        for index, t in enumerate(time):
+            new_time = timezero + datetime.timedelta(seconds=t)
+            new_time_list.append(new_time)
+        return np.array(new_time_list)
+    else:
+        raise RuntimeError('time must be MET number or array/list of times')
+
+
+# This function converts seconds from Jan 1 1994 into a datetime in UTC
+def convert_time_RXTE(time):
+    timezero = datetime.datetime(year=1994, month=1,
+                                 day=1, hour=0, minute=0, second=0)
+    if isinstance(time, numbers.Real):
+        new_time = timezero + datetime.timedelta(seconds=time)
         return new_time
     elif isinstance(time, list) or isinstance(time, np.ndarray):
         new_time_list = []
@@ -111,14 +129,33 @@ def point_on_earth(theta_list, phi_list):
 
 # This function takes in an array of eci points (in km) and returns latitude, longitude, and altitude using pymap3d
 #  note that time seconds is a single time, float number
-def eci2geodetic_pymap(los_point_array, time_seconds):
-    if los_point_array.ndim == 1:
-        los_point_m = los_point_array * 1000   # convert to [m]
-        lat, lon, alt = pm.eci2geodetic(los_point_m[0], los_point_m[1], los_point_m[2], convert_time_NICER(time_seconds))
-        # return altitude in km, lat and lon in degrees
-        return lat, lon, alt / 1000
+def eci2geodetic_pymap(los_point_array, time_seconds, detector):
+    if detector == "NICER":
+        if los_point_array.ndim == 1:
+            los_point_m = los_point_array * 1000  # convert to [m]
+            lat, lon, alt = pm.eci2geodetic(los_point_m[0], los_point_m[1], los_point_m[2], convert_time_NICER(time_seconds))
+            # return altitude in km, lat and lon in degrees
+            return lat, lon, alt / 1000
+        else:
+            # multiple los_points, time_seconds is either a number or array
+            print(time_seconds)
+            los_point_array_m = los_point_array * 1000  # convert to [m]
+            lats, lons, alts = pm.eci2geodetic(los_point_array_m[:, 0], los_point_array_m[:, 1], los_point_array_m[:, 2], convert_time_NICER(time_seconds))
+            return lats, lons, alts / 1000
+    elif detector == "RXTE":
+        if los_point_array.ndim == 1:
+            los_point_m = los_point_array * 1000  # convert to [m]
+            lat, lon, alt = pm.eci2geodetic(los_point_m[0], los_point_m[1], los_point_m[2],
+                                            convert_time_RXTE(time_seconds))
+            # return altitude in km, lat and lon in degrees
+            return lat, lon, alt / 1000
+        else:
+            # multiple los_points, time_seconds is either a number or array
+            print(time_seconds)
+            los_point_array_m = los_point_array * 1000  # convert to [m]
+            lats, lons, alts = pm.eci2geodetic(los_point_array_m[:, 0], los_point_array_m[:, 1],
+                                               los_point_array_m[:, 2], convert_time_RXTE(time_seconds))
+            return lats, lons, alts / 1000
+
     else:
-        # multiple los_points, time_seconds is either a number or array
-        los_point_array_m = los_point_array * 1000   # convert to [m]
-        lats, lons, alts = pm.eci2geodetic(los_point_array_m[:, 0], los_point_array_m[:, 1], los_point_array_m[:, 2], convert_time_NICER(time_seconds))
-        return lats, lons, alts / 1000
+        raise RuntimeWarning("'detector' user input is not valid")

@@ -55,6 +55,7 @@ class OrbitModel:
 
         return x_array
 
+    # measured rxte orbit
     @staticmethod
     def read_rxte_orbit(fn_string):
         tab = Table.read(fn_string, hdu=1)
@@ -69,5 +70,25 @@ class OrbitModel:
         v_array = np.column_stack((v_x, v_y, v_z))  # km/s
         return r_array, v_array, t_array
 
+    # Planned rxte orbit for testing
+    @staticmethod
+    def read_rxte_orbit_planned():
+        from pathlib import Path
+        cwd = str(Path(__file__).parents[1])  # HCNM2/ is cwd
+        fn_string = cwd + '/Data/RXTE/obsid_test/test_ch_7_9/time_x_y_z.npy'
+        dp = np.load(fn_string)
 
+        tp = []
+        xp = []
+        yp = []
+        zp = []
 
+        for tup in dp:
+            tp.append(tup[0])
+            xp.append(tup[1])
+            yp.append(tup[2])
+            zp.append(tup[3])
+
+        t_array = np.array(tp)
+        r_array = np.column_stack((np.array(xp)/1000.0, np.array(yp)/1000.0, np.array(zp)/1000.0))
+        return r_array, r_array, t_array

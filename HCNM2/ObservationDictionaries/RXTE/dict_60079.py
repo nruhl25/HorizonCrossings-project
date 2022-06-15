@@ -6,11 +6,7 @@ import numpy as np
 from pathlib import Path
 cwd = str(Path(__file__).parents[2])  # HCNM2/ is cwd
 
-# code for the driver, reading in the data files:
-# timeRate = np.load(cwd + "/Data/RXTE/obsid_test/test_ch_7_9/7_9_timeRate.npy")  # note that this is flipped from what Jacob will do
-# ampCenters = np.load(cwd + "/Data/RXTE/obsid_test/test_ch_7_9/7_9_ampCenters.npy")
-
-test_obs = {   # BASIC OBSERVATION INFO
+dict_60079 = {   # BASIC OBSERVATION INFO
             "detector": "RXTE",
             "source_name": "Crab Nebula",
             "source_RA": 83.63426,  # deg
@@ -19,10 +15,10 @@ test_obs = {   # BASIC OBSERVATION INFO
             "hc_type": "setting",
 
             # USER-DEFINED DATA
-            "crossing_time_range": np.array([100 + 5.55031e8, 385 + 5.55031e8]),  # seconds in MET
+            "crossing_time_range": np.array([8400+2.5992e8, 8800+2.5992e8]),  # seconds in MET
             "f107": 75.2,
             "ap": 2,
 
             # PATHS TO DATA FILES
-            "rossi_path": cwd + "/Data/RXTE/obsid_test/test_ch_7_9/FPorbit_Day6423",  # NICER orbital solution
+            "rossi_path": cwd + "/Data/RXTE/60079/7_9_matrices/FPorbit_Day3008",  # orbital solution
 }
