@@ -72,6 +72,7 @@ class TransmitModel:
             tau_i = (np.sum(2*density_array, axis=1) + density_tp_list) * sigma_i * ds_cm
             effective_transmit += prob_i * np.exp(-tau_i)
         print(f"a={a} (should be one)")
+        effective_transmit = np.nan_to_num(effective_transmit, posinf=np.nan)  # This may occur for setting crossing
 
         return effective_transmit, self.time_crossing_model
 
@@ -113,9 +114,9 @@ class TransmitModel:
         starArray = np.ones((len(n_list), 3)) * self.obs_dict['starECI']
 
         # convert the time_index for time_crossing (bin_size) into an index for r_array (0.01 sec)
-        time_index_long = int(time_index / self.time_step_r)
+        time_index_long = int(time_index / (self.bin_size*self.time_step_r))
         index_start_setting = self.t0_model_index - int(self.time_final / self.time_step_r)
-        # TODO: fix this for setting crossing!!
+
         if self.hc_type == "rising":
             # start the calculation of the curve at t0 and r0
             return self.r_array[self.t0_model_index + time_index_long] + n_column_vec * starArray

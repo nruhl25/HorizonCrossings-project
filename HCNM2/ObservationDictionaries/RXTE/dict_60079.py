@@ -8,6 +8,8 @@ cwd = str(Path(__file__).parents[2])  # HCNM2/ is cwd
 
 dict_60079 = {   # BASIC OBSERVATION INFO
             "detector": "RXTE",
+            "obsID": 60079,
+            "epoch": 5,
             "source_name": "Crab Nebula",
             "source_RA": 83.63426,  # deg
             "source_DEC": 22.010,  # deg

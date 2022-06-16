@@ -70,7 +70,7 @@ class ReadEVT:
         hc_type = self.obs_dict["hc_type"]
 
         # If we identified a start_crossing or stop_crossing point that is not in the data file
-        band_count_rate = np.array(band_count_rate, np.float)  # integers can't go with np.nan
+        band_count_rate = np.array(band_count_rate, float)  # integers can't go with np.nan
         if hc_type == "rising":
             if start_crossing < band_times_binned[0]:
                 delta_T = int(np.ceil(band_times_binned[0] - start_crossing))
@@ -107,7 +107,7 @@ class ReadEVT:
         # Only works after you have already shortened rate_to_fit into the approximate HC time range
         max_rate_index = np.where(rate_to_fit == np.max(rate_to_fit))[0][0]
         # calculate the mean value for a time range around the max value.
-        # Indices cuts out the noise and zero count rate at the end
+        # Indices cut out the noise and zero count rate at the end
         indices = np.where(rate_to_fit[max_rate_index:len(rate_to_fit)] > np.max(rate_to_fit)/2)[0]
         plateau_rate = np.mean(rate_to_fit[max_rate_index+indices])
 

@@ -37,7 +37,6 @@ class CurveComparison:
     def locate_t0_step1(self):
         if self.hc_type == "setting":
             index50_approx_data = np.where(self.transmit_data < 0.51)[0][0]
-            print(index50_approx_data)
         elif self.hc_type == "rising":
             index50_approx_data = np.where(self.transmit_data > 0.49)[0][0]
         transmit50_approx_data = self.transmit_data[index50_approx_data]
@@ -48,17 +47,17 @@ class CurveComparison:
         if self.hc_type == "rising":
             t0_1 = t50_approx_data - dt50_approx_model
         elif self.hc_type == "setting":
-            t0_1 = t50_approx_data + dt50_approx_model
+            # Note that this formula for t0_1 is different than the toy model, but necessary here
+            t0_1 = t50_approx_data + self.time_model[-1] - dt50_approx_model
         return t0_1
 
     # This function slides the model past the data at time intervals of desired_precision and calculates chi_sq
     def locate_t0_step2(self):
         desired_precision = 0.01
+
         t0_1_index = np.where(self.time_data >= self.t0_1)[0][0]
 
         # Define the data points in the full crossing time range
-        for i in range(1):
-            print("hi")
         if self.hc_type == "setting":
             time_crossing_data = self.time_data[t0_1_index-len(self.time_model)+1:t0_1_index+1]
             rate_data = self.rate_data[t0_1_index-len(self.time_model)+1:t0_1_index+1]
@@ -68,12 +67,10 @@ class CurveComparison:
             rate_data = self.rate_data[t0_1_index:t0_1_index+len(self.time_model)]
             transmit_data = rate_data / self.N
 
-        # bin size must be greater than 2
         t_start_list = np.arange(self.t0_1-2,
                                  self.t0_1+2,
                                  desired_precision)
 
-        # My first impression would be to used transmit_data below, but this leads to problems...
         weight_range = np.where((self.transmit_model >= CurveComparison.comp_range[0]) & (self.transmit_model <= CurveComparison.comp_range[1]))[0]
 
         chisq_list = np.zeros(len(t_start_list))
@@ -82,20 +79,26 @@ class CurveComparison:
             if self.hc_type == "rising":
                 time_crossing_model = t0_guess + self.time_model
             elif self.hc_type == "setting":
-                time_crossing_model = np.flip(t0_guess - self.time_model)
+                time_crossing_model = np.flip(np.arange(t0_guess, t0_guess - len(self.time_model), -self.bin_size))
 
             # Note that however this interpolation is done, the model and data times need to be in the same order
-            model_rate_vs_time = interp1d(time_crossing_model, self.N*self.transmit_model, kind='cubic')
+            # It is good to setup the interpolating function in the weight range (incase nans in transmit_model)
+            rate_model = self.N*self.transmit_model
+            model_rate_vs_time = interp1d(time_crossing_model[weight_range], rate_model[weight_range], kind='cubic', fill_value="extrapolate")
             model_rate_interp = model_rate_vs_time(time_crossing_data[weight_range])
-            if any(model_rate_interp <= 0):
+            if any(model_rate_interp < 0.0):
                 print("Cubic spline went negative")
             # List of model values at times where data points are
 
-            # Chi-squared test in weight_range of full curve
-            chisq = np.sum(
-                (rate_data[weight_range] - model_rate_interp) ** 2 / model_rate_interp)
+            # Chi-squared test in weight_range of full curve (make sure we didn't get any nans here)
+            chisq_i = (rate_data[weight_range] - model_rate_interp) ** 2 / model_rate_interp
+            chisq_i = np.nan_to_num(chisq_i, nan=0.0)
+            chisq = np.sum(chisq_i)
             chisq_list[indx] = chisq
 
+        import matplotlib.pyplot as plt
+        plt.plot(chisq_list)
+        plt.show()
         t0_e = t_start_list[np.argmin(chisq_list)]
 
         return t0_e, t_start_list, chisq_list

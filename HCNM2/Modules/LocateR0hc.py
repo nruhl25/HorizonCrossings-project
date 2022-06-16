@@ -51,7 +51,7 @@ class LocateR0hc:
         return A_2d, r0_2d
 
     def get_t0_guess_indices(self):
-        r0_guess_indices = np.isclose(self.r_array, self.r0_2d, 0.05)
+        r0_guess_indices = np.isclose(self.r_array, self.r0_2d, 0.005)
 
         # 0.5% corresponds to ~15km or more for each component (0.005*3000=15)
 
