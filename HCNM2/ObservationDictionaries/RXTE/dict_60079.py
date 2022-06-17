@@ -22,5 +22,5 @@ dict_60079 = {   # BASIC OBSERVATION INFO
             "ap": 2,
 
             # PATHS TO DATA FILES
-            "rossi_path": cwd + "/Data/RXTE/60079/7_9_matrices/FPorbit_Day3008",  # orbital solution
+            "rossi_path": cwd + "/Data/RXTE/60079/FPorbit_Day3008",  # orbital solution
 }

@@ -58,7 +58,6 @@ class NormalizeSpectrumNICER:
 
         return event_times_range, event_energies_kev_range
 
-
     # method to smooth the spectrum with fft
     def smooth_spectrum(self):
         # Fourrier transform from the energy domain to the 1/energy domain

@@ -96,9 +96,6 @@ class CurveComparison:
             chisq = np.sum(chisq_i)
             chisq_list[indx] = chisq
 
-        import matplotlib.pyplot as plt
-        plt.plot(chisq_list)
-        plt.show()
         t0_e = t_start_list[np.argmin(chisq_list)]
 
         return t0_e, t_start_list, chisq_list

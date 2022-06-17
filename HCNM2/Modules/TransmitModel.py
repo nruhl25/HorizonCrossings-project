@@ -29,7 +29,7 @@ class TransmitModel:
     mix_Ar = 0.01
 
     dE_eff = 0.25  # keV, default step size for the effective transmittance model (NICER)
-    N_eff = 10   # Number of effective transmit steps for variable energy band (RXTE)
+    N_eff = 4   # Number of effective transmit steps for variable energy band (RXTE)
     dx = 0.0005  # keV, energy step size (in a step of const xsect) to calc probability under the normalized spectrum
 
     ds_km = 0.5   # km, step size along the telescopic LOS
@@ -47,7 +47,7 @@ class TransmitModel:
         self.r0_hc = self.r_array[self.t0_model_index]
         self.time_step_r = self.t_array[1] - self.t_array[0]  # time step in r_array and t_array
 
-        self.time_final = 200   # There is a more general way to define this
+        self.time_final = 200  # self.set_time_final()   # There is a more general way to define this
         self.time_crossing_model = np.arange(0, self.time_final + self.bin_size, self.bin_size, float)
 
     def calculate_transmit_model(self):
@@ -63,7 +63,7 @@ class TransmitModel:
         effective_transmit = np.zeros_like(self.time_crossing_model, float)  # transmittance over time of crossing
         en1_list, en2_list = self.define_energy_integration_lists()   # different for RXTE/NICER
         a = 0
-        prob_i = 1/(TransmitModel.N_eff-1)   # TODO: Temporary fix for RXTE testing
+        prob_i = 1/TransmitModel.N_eff   # TODO: Temporary fix for RXTE testing
         for i in range(len(en1_list)):
             E_mean = np.mean([en1_list[i], en2_list[i]])
             # prob_i = self.calc_spectrum_probability(en1_list[i], en2_list[i])
@@ -92,7 +92,7 @@ class TransmitModel:
             lat_list_deg_pymap, lon_list_deg_pymap, altitude_list_pymap = tools.eci2geodetic_pymap_array(los_points_km, mid_time_crossing, self.year0)
             # Only consider half of the LOS
             tangent_point_index = np.argmin(altitude_list_pymap)
-            # print(f"tangent altitude = {altitude_list_pymap[tangent_point_index]}")  # TANGENT ALTITUDE
+            print(f"tangent altitude = {altitude_list_pymap[tangent_point_index]}")  # TANGENT ALTITUDE
             los_densities = MSIS.get_pymsis_density(datetime=mid_datetime_crossing,
                                                     lon=self.lon_gp,
                                                     lat=self.lat_gp,
@@ -142,10 +142,13 @@ class TransmitModel:
             en2_list = en1_list + TransmitModel.dE_eff  # right side of constant sigma steps
         else:
             dE = (self.e_band[1] - self.e_band[0])/TransmitModel.N_eff
-            en1_list = np.linspace(self.e_band[0], self.e_band[1], TransmitModel.N_eff)
-            en1_list = en1_list[:-1]
+            en1_list = np.arange(self.e_band[0], self.e_band[1], dE)
             en2_list = en1_list + dE
         return en1_list, en2_list
+
+    # TODO: Figure out a good definition generalizable for any planet and any atmosphere
+    def set_time_final(self):
+        return 200
 
     @classmethod
     def set_ds_km(cls, ds):

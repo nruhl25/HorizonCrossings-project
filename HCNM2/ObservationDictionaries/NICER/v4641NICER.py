@@ -27,9 +27,4 @@ v4641NICER = {   # BASIC OBSERVATION INFO
             "mkf_path": cwd + "/Data/NICER/2-3-20-v4641/ISS_orbit.mkf",  # NICER orbital solution
 
             "aster_path": None  # ASTER Labs orbital solution
-
-            # INFO FOR RXTE OBS_DICT
-            # "lc_path": None,  # RXTE binned data
-            # "orb_path": None,  # RXTE orbital solution
-            # "spectrum_path": None,  # RXTE only
 }

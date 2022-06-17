@@ -3,6 +3,7 @@
 import numpy as np
 from scipy.interpolate import interp1d
 
+
 def channel_to_keV_epoch5(channel_in):
     en_channel = np.arange(7.0, 40.0, 1.0)
 
