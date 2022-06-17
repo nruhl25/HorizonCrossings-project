@@ -87,12 +87,12 @@ class LocateR0hc:
             los_points = self.los_line(time_index, n_list)  # all points along the LOS
 
             # Lists to check radial altitude at different points along the LOS
+            # Pymap3d (tools.py) seems to be buggy right now, so we'll ignore longitude and do it manually
             los_mag_list = np.sqrt(los_points[:, 0] ** 2 + los_points[:, 1] ** 2 + los_points[:, 2] ** 2)
-            phi_list = np.arccos(los_points[:, 2] / los_mag_list)  # polar angle at every point along the line of sight
+            polar_angles = np.arccos(los_points[:, 2] / los_mag_list)  # polar angle at every point along the line of sight
             # Find the radius of earth with the same polar angle as points along the line of sight
-            earth_points = tools.point_on_earth(np.zeros_like(phi_list), phi_list)
+            earth_points = tools.point_on_earth_azimuth_polar(np.zeros_like(polar_angles), polar_angles)
             earth_radius_list = np.sqrt(earth_points[:, 0] ** 2 + earth_points[:, 1] ** 2 + earth_points[:, 2] ** 2)
-            # Should I use pymap3d altitudes?
 
             # Identify hc_type (note that this needs to be defined earlier)
             if time_index == 0:
@@ -111,7 +111,7 @@ class LocateR0hc:
                     A_3d = n_list[n_graze_index]
                     # The 2 below definitions are insightful, but not currently being used
                     graze_point = los_points[n_graze_index]
-                    graze_phi = phi_list[n_graze_index]   # polar angle at graze_point
+                    graze_phi = polar_angles[n_graze_index]   # polar angle at graze_point
                     return self.r0_guess_list[time_index], t0_model_index, graze_point, A_3d
                 else:
                     continue
@@ -123,7 +123,7 @@ class LocateR0hc:
                     A_3d = n_list[n_graze_index]
                     # The 2 below definitions are insightful, but not currently being used
                     graze_point = los_points[n_graze_index]
-                    graze_phi = phi_list[n_graze_index]   # polar angle at graze_point
+                    graze_phi = polar_angles[n_graze_index]   # polar angle at graze_point
                     return self.r0_guess_list[time_index], t0_model_index, graze_point, A_3d
                 else:
                     # keep moving through time until the whole LOS is above earth

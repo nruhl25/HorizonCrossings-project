@@ -18,8 +18,9 @@ dict_60079 = {   # BASIC OBSERVATION INFO
 
             # USER-DEFINED DATA
             "crossing_time_range": np.array([8400+2.5992e8, 8800+2.5992e8]),  # seconds in MET
-            "f107": 75.2,
-            "ap": 2,
+            "t_mid_datetime": '2002-03-28T10:23:20',  # Not used, just for records
+            "f107": 176.2,  # last column in Kp_ap_1932.txt table (F10.7adj)
+            "ap": 3,  # fourth to last column in Kp_ap_1932.txt table (ap4: fourth 1/8 of the 24 hour day)
 
             # PATHS TO DATA FILES
             "rossi_path": cwd + "/Data/RXTE/60079/FPorbit_Day3008",  # orbital solution

@@ -104,7 +104,8 @@ def period_to_a(T):
     return a
 
 
-def point_on_earth(theta_list, phi_list):
+# theta is azimuthal angle, phi is polar (weird, right?)
+def point_on_earth_azimuth_polar(theta_list, phi_list):
     if isinstance(phi_list, np.integer) or isinstance(phi_list, np.float):
         # theta and phi are single values
         phi = phi_list

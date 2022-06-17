@@ -30,7 +30,7 @@ class TransmitModel:
 
     dE_eff = 0.25  # keV, default step size for the effective transmittance model (NICER)
     N_eff = 4   # Number of effective transmit steps for variable energy band (RXTE)
-    dx = 0.0005  # keV, energy step size (in a step of const xsect) to calc probability under the normalized spectrum
+    dx = 0.005  # keV, energy step size (in a step of const xsect) to calc probability under the normalized spectrum
 
     ds_km = 0.5   # km, step size along the telescopic LOS
 
@@ -47,8 +47,8 @@ class TransmitModel:
         self.r0_hc = self.r_array[self.t0_model_index]
         self.time_step_r = self.t_array[1] - self.t_array[0]  # time step in r_array and t_array
 
-        self.time_final = 200  # self.set_time_final()   # There is a more general way to define this
-        self.time_crossing_model = np.arange(0, self.time_final + self.bin_size, self.bin_size, float)
+        self.time_final = self.set_time_final()   # TODO: There is a more general way to define this
+        self.time_crossing_model = np.arange(0, self.time_final, self.bin_size, float)
 
     def calculate_transmit_model(self):
 
@@ -71,7 +71,7 @@ class TransmitModel:
             sigma_i = BCM.get_total_xsect(E_mean, TransmitModel.mix_N, TransmitModel.mix_O, TransmitModel.mix_Ar, 0)
             tau_i = (np.sum(2*density_array, axis=1) + density_tp_list) * sigma_i * ds_cm
             effective_transmit += prob_i * np.exp(-tau_i)
-        print(f"a={a} (should be one)")
+        print(f"a={a} (should be exactly one)")
         effective_transmit = np.nan_to_num(effective_transmit, posinf=np.nan)  # This may occur for setting crossing
 
         return effective_transmit, self.time_crossing_model
@@ -87,16 +87,27 @@ class TransmitModel:
         density_tp_list = np.zeros(len(self.time_crossing_model))
 
         # +1 below is important to get to tangent point in a setting crossing
-        for t_index, time in enumerate(self.time_crossing_model):
+        for t_index in range(len(self.time_crossing_model)):
             los_points_km = self.line_of_sight(t_index, s_list_km)
-            lat_list_deg_pymap, lon_list_deg_pymap, altitude_list_pymap = tools.eci2geodetic_pymap_array(los_points_km, mid_time_crossing, self.year0)
+            los_mag_list = np.sqrt(los_points_km[:, 0] ** 2 + los_points_km[:, 1] ** 2 + los_points_km[:, 2] ** 2)
+            # Calculate altitudes corresponding to points on the LOS:
+
+            # Line below uses pymap3d and astropy, which seems to be buggy right now
+            # lat_list_deg_pymap, lon_list_deg_pymap, altitude_list_pymap = tools.eci2geodetic_pymap_array(los_points_km, mid_time_crossing, self.year0)
+            phi_c_list_rad = (np.pi / 2) - np.arccos(los_points_km[:, 2] / los_mag_list)  # geocentric latitudes
+            polar_angles = (np.pi / 2) - phi_c_list_rad
+            earth_points = tools.point_on_earth_azimuth_polar(np.zeros_like(polar_angles), polar_angles)
+            earth_radius_list = np.sqrt(earth_points[:, 0] ** 2 + earth_points[:, 1] ** 2 + earth_points[:, 2] ** 2)
+            altitude_list = los_mag_list - earth_radius_list
+
             # Only consider half of the LOS
-            tangent_point_index = np.argmin(altitude_list_pymap)
-            print(f"tangent altitude = {altitude_list_pymap[tangent_point_index]}")  # TANGENT ALTITUDE
+            # Only consider half of the LOS
+            tangent_point_index = np.argmin(altitude_list)
+            print(f"tangent altitude = {altitude_list[tangent_point_index]}")  # TANGENT ALTITUDE
             los_densities = MSIS.get_pymsis_density(datetime=mid_datetime_crossing,
                                                     lon=self.lon_gp,
                                                     lat=self.lat_gp,
-                                                    alts=altitude_list_pymap,
+                                                    alts=altitude_list,
                                                     f107=self.obs_dict["f107"],
                                                     ap=self.obs_dict["ap"],
                                                     version=00)[1]
@@ -146,9 +157,8 @@ class TransmitModel:
             en2_list = en1_list + dE
         return en1_list, en2_list
 
-    # TODO: Figure out a good definition generalizable for any planet and any atmosphere
     def set_time_final(self):
-        return 200
+        return 150
 
     @classmethod
     def set_ds_km(cls, ds):

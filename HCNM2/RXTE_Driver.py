@@ -10,7 +10,6 @@ from Modules.CurveComparison import CurveComparison
 from Modules.get_unattenuated_rate_RXTE import get_unattenuated_rate_RXTE
 
 # import observation dictionary
-from ObservationDictionaries.RXTE.test_obs import test_obs
 from ObservationDictionaries.RXTE.dict_60079 import dict_60079
 
 import numpy as np
@@ -58,7 +57,7 @@ bin_centers_ch = ampCenters[:, 1]   # channels
 bin_centers_kev = channel_to_keV_epoch5(bin_centers_ch)
 
 unattenuated_rate = get_unattenuated_rate_RXTE(rate_data_raw)
-print(unattenuated_rate)
+print(f"{unattenuated_rate} (seems a little small, right?)")
 
 # 4) Lengthen rate_data and time_data if necessary
 rate_data, time_data = generate_nans_rxte(obs_dict, rate_data_raw, time_data_raw)
