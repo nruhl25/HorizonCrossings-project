@@ -53,10 +53,9 @@ ampCenters = np.load(fn_ampCenters)
 rate_data_raw = rateTime[:, 0]
 time_data_raw = rateTime[:, 1]
 normalized_amplitudes = ampCenters[:, 0]
-bin_centers_ch = ampCenters[:, 1]   # channels
-bin_centers_kev = channel_to_keV_epoch5(bin_centers_ch)
+bin_centers_kev = ampCenters[:, 1]   # keV
 
-unattenuated_rate = 2626  # get_unattenuated_rate_RXTE(rate_data_raw) (this is under-estimating?)
+unattenuated_rate = get_unattenuated_rate_RXTE(obs_dict, rate_data_raw, time_data_raw)
 print(f"unattenuated rate = {unattenuated_rate}")
 
 # 4) Lengthen rate_data and time_data if necessary
