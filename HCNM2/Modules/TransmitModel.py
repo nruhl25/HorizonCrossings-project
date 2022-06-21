@@ -28,7 +28,7 @@ class TransmitModel:
     mix_O = 0.21
     mix_Ar = 0.01
 
-    dE_eff = 0.25  # keV, default step size for the effective transmittance model (NICER)
+    dE_eff = 0.20  # keV, default step size for the effective transmittance model (NICER)
     N_eff = 4   # Number of effective transmit steps for variable energy band (RXTE)
     dx = 0.005  # keV, energy step size (in a step of const xsect) to calc probability under the normalized spectrum
 
@@ -103,7 +103,7 @@ class TransmitModel:
             # Only consider half of the LOS
             # Only consider half of the LOS
             tangent_point_index = np.argmin(altitude_list)
-            print(f"tangent altitude = {altitude_list[tangent_point_index]}")  # TANGENT ALTITUDE
+            # print(f"tangent altitude = {altitude_list[tangent_point_index]}")  # TANGENT ALTITUDE
             los_densities = MSIS.get_pymsis_density(datetime=mid_datetime_crossing,
                                                     lon=self.lon_gp,
                                                     lat=self.lat_gp,
@@ -143,7 +143,7 @@ class TransmitModel:
         # perform numerical integration between en1 and en2
         prob_in_range = 0  # this is the integral sum of probability. Add up area under the curve
         for left_bound in np.arange(en1_kev, en2_kev, TransmitModel.dx):
-            prob_in_range += (spec(left_bound) + spec(left_bound))*(TransmitModel.dx / 2)
+            prob_in_range += (spec(left_bound) + spec(left_bound+TransmitModel.dx))*(TransmitModel.dx / 2)
         return prob_in_range
 
     # Integrate the area under the spectrum differently for NICER and RXTE data

@@ -21,9 +21,11 @@ import numpy as np
 
 def main():
     obs_dict = v4641NICER
-    # e_band = [1.0, 2.0]  # keV
     bin_size = 1.0   # sec
-    e_band_array = np.array([[1.0, 2.0]])
+    e_band_array = np.array([[1.0, 2.0],
+                             [2.0, 3.0],
+                             [3.0, 4.0],
+                             [4.0, 5.0]])
 
     # 1) Define orbit model
     r_array, v_array, t_array = OrbitModel.define_orbit_model(obs_dict, "mkf", time_step=0.01)
@@ -58,6 +60,7 @@ def main():
         # 6)
         model_and_data_tuple = (time_crossing_model, transmit_model, time_data, rate_data, unattenuated_rate)
 
+        CurveComparison.set_comp_range([0.01, 0.99])
         comp_obj = CurveComparison(obs_dict, model_and_data_tuple)
         t0_e, dt_e = comp_obj.t0_e, comp_obj.dt_e
         del comp_obj

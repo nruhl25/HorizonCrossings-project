@@ -6,8 +6,8 @@ from scipy.fft import fft, ifft
 from scipy.interpolate import interp1d
 
 # INPUTS:
-# evt_obj (object of ReadEVT, so we don't have to readd the same EVT file multiple times)
-# e_band: [1.0, 2.0], energy with which to normaliz the spectrum
+# evt_obj (object of ReadEVT, so we don't have to read the same EVT file multiple times)
+# e_band: [1.0, 2.0], energy with which to normalize the spectrum
 
 # IMPORTANT ATTRIBUTES:
 # self.normalized_amplitudes
@@ -38,9 +38,10 @@ class NormalizeSpectrumNICER:
         self.amplitudes, self.bin_boundaries = np.histogram(self.event_energies_spectrum_kev, bins=NormalizeSpectrumNICER.hist_bins)
         self.bin_width = self.bin_boundaries[1] - self.bin_boundaries[0]  # width of energy bins in keV
         self.bin_centers = self.bin_boundaries[0:-1] + 0.5 * self.bin_width  # bin centers
+        # self.amplitude_centers = self.interpolate_spectrum_left_bounds(self.bin_centers)
 
         # Smooth the spectrum, normalize it in the desired range, and calculate the probability in the range
-        self.amplitude_clean = self.smooth_spectrum()  # smooths self.amplitudes
+        self.amplitude_clean = self.smooth_spectrum()  # smooths self.amplitude_centers
         self.normalized_amplitudes = self.amplitude_clean / self.calc_total_area_eband()
 
     # Method called from the Driver: returns 2 fields
@@ -77,7 +78,13 @@ class NormalizeSpectrumNICER:
 
         return amplitude_clean.real
 
-    # methods to normalize the spectrum. spectrum_counts is the y value
+    def interpolate_spectrum_left_bounds(self, bin_centers):
+        # need to extrapolate for the last bin center
+        func = interp1d(self.bin_boundaries[0:-1], self.amplitudes, fill_value="extrapolate")
+        return func(bin_centers)
+
+    # Function to interpolate a spectrum with data corresponding to bin_centers
+    # cubic interpolation after we've smoothed the spectrum
     def interpolate_spectrum(self, e_val, spectrum_counts):
         func = interp1d(self.bin_centers, spectrum_counts)
         return func(e_val)

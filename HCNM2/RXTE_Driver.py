@@ -34,14 +34,14 @@ orbit_derived_inputs = (r_array, t_array, t0_model_index, lat_gp, lon_gp)
 
 # 3a) Choose energy band to analyze
 
-e_band_ch = [10, 12]
+e_band_ch = [7-1, 9]   # min to max energy of data included (minus one is important in lower bound)
 e_band_kev = channel_to_keV_epoch5(e_band_ch)
 print(f"e_band_kev = {e_band_kev}")
 bin_size = 1.0
 
 # vars below used for reading in the correct data files
 obsid = obs_dict["obsID"]
-e_id = f"{e_band_ch[0]}_{e_band_ch[1]}"  # string identifier for the given energy band
+e_id = f"{e_band_ch[0]+1}_{e_band_ch[1]}"  # string identifier for the given energy band
 fn_rateTime = cwd + f"/Data/RXTE/{obsid}/{e_id}_matrices/{e_id}_rateTime.npy"
 fn_ampCenters = cwd + f"/Data/RXTE/{obsid}/{e_id}_matrices/{e_id}_ampCenters.npy"
 
@@ -56,8 +56,8 @@ normalized_amplitudes = ampCenters[:, 0]
 bin_centers_ch = ampCenters[:, 1]   # channels
 bin_centers_kev = channel_to_keV_epoch5(bin_centers_ch)
 
-unattenuated_rate = get_unattenuated_rate_RXTE(rate_data_raw)
-print(f"{unattenuated_rate} (seems a little small, right?)")
+unattenuated_rate = 2626  # get_unattenuated_rate_RXTE(rate_data_raw) (this is under-estimating?)
+print(f"unattenuated rate = {unattenuated_rate}")
 
 # 4) Lengthen rate_data and time_data if necessary
 rate_data, time_data = generate_nans_rxte(obs_dict, rate_data_raw, time_data_raw)
