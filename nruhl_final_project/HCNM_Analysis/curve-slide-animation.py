@@ -1,5 +1,5 @@
 # Author: Nathaniel Ruhl
-# This script makes and animation of the curve comparison
+# This script makes and animation of the curve comparison. This script should be used whenever working to improve the algorithm
 
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -17,7 +17,7 @@ from AnalyzeCrossing import AnalyzeCrossing
 # Global parameters to be used in the analysis
 cb_str = "Earth"
 hc_type = "rising"
-N0 = 244  # average number of unattenuated counts in data
+N0 = 5378  # average number of unattenuated counts in data
 E_kev = 1.5
 H = 4000  # km, orbital altitude
 bin_size = 1.0
@@ -69,6 +69,8 @@ class CurveComparison:
         # First step to identify t0
         self.t0_1 = self.locate_t0_step1()
         self.t0_new = self.locate_t0_alternative()
+        import time
+        time.sleep(5)
         self.t0_e, self.t0_guess_list, self.chisq_list = self.locate_t0_step2()
         self.dt_e = self.analyze_chisq()
 
@@ -121,12 +123,13 @@ class CurveComparison:
         t_start_list = np.arange(self.t0_1-1,
                                  self.t0_1+1,
                                  desired_precision)
-
-        weight_range = np.where((self.transmit_model >= comp_range[0]) & (
-            self.transmit_model <= comp_range[1]))[0]
+        
+        weight_range = np.where((self.transmit_model >= comp_range[0]) & (self.transmit_model <= comp_range[1]))[0]
 
         chisq_list = np.zeros(len(t_start_list))
+        fig, ax = plt.subplots(1, 2)
         for indx, t0_guess in enumerate(t_start_list):
+            ax[0].clear()
             # define interpolating function and array for the model
             if self.hc_type == "rising":
                 time_crossing_model = np.arange(
@@ -136,12 +139,13 @@ class CurveComparison:
                     np.arange(t0_guess, t0_guess - self.sat.time_final, -bin_size))
             else:
                 continue
-
+            
             # Note that however this interpolation is done, the model and data times need to be in the same order
             model_rate_vs_time = interp1d(
                 time_crossing_model, self.N0*self.transmit_model, kind='cubic')
             model_rate_interp = model_rate_vs_time(
                 time_crossing_data[weight_range])
+
             # List of model values at times where data points are
 
             if any(model_rate_interp <= 0):
@@ -152,14 +156,13 @@ class CurveComparison:
                 (rate_data[weight_range] - model_rate_interp) ** 2 / model_rate_interp)
             chisq_list[indx] = chisq
 
-            plt.figure(1)
-            plt.plot(time_crossing_data[weight_range], model_rate_interp)
-            plt.plot(time_crossing_data[weight_range], rate_data[weight_range], 'x')
-            plt.pause(0.01)
-
-            plt.figure(2)
-            plt.plot(t0_guess, chisq, '.')
-            plt.pause(0.01)
+            if indx % 4 == 0:
+                ax[0].plot(time_crossing_data[weight_range], model_rate_interp, 'b-')
+                ax[0].plot(time_crossing_data[weight_range], rate_data[weight_range], 'kx')
+                ax[1].plot(t0_guess, chisq, 'r.')
+                ax[0].set_xlim([min(time_crossing_data[weight_range]-1), max(time_crossing_data[weight_range])+1])
+                ax[0].set_ylim([0, max(rate_data[weight_range])+10])
+                plt.pause(0.01)
 
         t0_e = t_start_list[np.argmin(chisq_list)]
 
@@ -216,7 +219,6 @@ class CurveComparison:
             t0_new_list = t_data_range - dt_model_list
         elif self.hc_type == "setting":
             t0_new_list = t_data_range + dt_model_list
-        print(t0_new_list)
         return np.mean(t0_new_list)
 
 if __name__ == "__main__":

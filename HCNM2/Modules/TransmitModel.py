@@ -34,6 +34,8 @@ class TransmitModel:
 
     ds_km = 0.5   # km, step size along the telescopic LOS
 
+    pymsis_version = 00
+
     def __init__(self, obs_dict, orbit_derived_inputs, eband_derived_inputs):
         # Unpack inputs
         if obs_dict["detector"] == "NICER":
@@ -63,10 +65,10 @@ class TransmitModel:
         effective_transmit = np.zeros_like(self.time_crossing_model, float)  # transmittance over time of crossing
         en1_list, en2_list = self.define_energy_integration_lists()   # different for RXTE/NICER
         a = 0
-        prob_i = 1/TransmitModel.N_eff   # TODO: Temporary fix for RXTE testing
+        # prob_i = 1/TransmitModel.N_eff   # TODO: Temporary fix for RXTE testing
         for i in range(len(en1_list)):
             E_mean = np.mean([en1_list[i], en2_list[i]])
-            # prob_i = self.calc_spectrum_probability(en1_list[i], en2_list[i])
+            prob_i = self.calc_spectrum_probability(en1_list[i], en2_list[i])
             a += prob_i
             sigma_i = BCM.get_total_xsect(E_mean, TransmitModel.mix_N, TransmitModel.mix_O, TransmitModel.mix_Ar, 0)
             tau_i = (np.sum(2*density_array, axis=1) + density_tp_list) * sigma_i * ds_cm
@@ -110,7 +112,7 @@ class TransmitModel:
                                                     alts=altitude_list,
                                                     f107=self.obs_dict["f107"],
                                                     ap=self.obs_dict["ap"],
-                                                    version=00)[1]
+                                                    version=TransmitModel.pymsis_version)[1]
             density_tp_list[t_index] = los_densities[tangent_point_index]
 
             los_densities[tangent_point_index:] = 0.0  # only consider densities on half the LOS
@@ -154,7 +156,9 @@ class TransmitModel:
         else:
             dE = (self.e_band[1] - self.e_band[0])/TransmitModel.N_eff
             en1_list = np.arange(self.e_band[0], self.e_band[1], dE)
+            print(en1_list)
             en2_list = en1_list + dE
+            print(en2_list)
         return en1_list, en2_list
 
     def set_time_final(self):
@@ -171,3 +175,10 @@ class TransmitModel:
     @classmethod
     def set_N_eff(cls, N_eff):
         cls.N_eff = N_eff
+
+    @classmethod
+    def set_pymsis_version(cls, version):
+        if version == 00 or version == 2:
+            cls.pymsis_version = version
+        else:
+            print("pymsis version must be either 2 or 00. 00 is being used as default")

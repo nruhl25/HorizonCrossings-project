@@ -11,7 +11,7 @@ from AnalyzeCrossing import AnalyzeCrossing
 from tcc_slide import CurveComparison, generate_crossings
 
 # Global variables
-N = 244  # average number of unattenuated counts in data
+N = 5378  # average number of unattenuated counts in data
 bin_size = 1
 comp_range = [0.01, 0.99]  # range of transmittance in which to compare the curves
 cb_str = "Earth"
@@ -30,7 +30,8 @@ def main():
         dt_list[i] = comp_obj.dt_e
         dr_list[i] = comp_obj.dt_e * sat.R_orbit * sat.omega
 
-
+    np.save("dr_list.npy", dr_list)
+    np.save("altitude_list.npy", altitude_list)
     # Plot results
     plt.figure(1)
     # plt.title(r"$\delta t_e$ uncertainty as a function of orbital altitude")

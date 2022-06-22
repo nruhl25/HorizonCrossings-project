@@ -42,7 +42,7 @@ for e_band in e_band_array:
 
     eband_derived_inputs = (e_band, bin_size, normalized_amplitudes, bin_centers)
 
-    # 5) RXTE Analysis starts here. Not currently working
+    # 5) RXTE Analysis starts here.
     model_obj = TransmitModel(obs_dict, orbit_derived_inputs, eband_derived_inputs)
     transmit_model, time_crossing_model = model_obj.calculate_transmit_model()
 

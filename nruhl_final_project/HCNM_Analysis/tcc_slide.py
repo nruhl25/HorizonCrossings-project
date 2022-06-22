@@ -14,9 +14,9 @@ from AnalyzeCrossing import AnalyzeCrossing
 # Global parameters to be used in the analysis
 cb_str = "Earth"
 hc_type = "rising"
-N0 = 244  # average number of unattenuated counts in data
+N0 = 5378  # average number of unattenuated counts in data
 E_kev = 1.5
-H = 4000  # km, orbital altitude
+H = 420  # km, orbital altitude
 bin_size = 1
 comp_range = [0.01, 0.99]  # range of transmittance in which to compare the curves
 
@@ -183,7 +183,7 @@ class CurveComparison:
             t0_new_list = t_data_range - dt_model_list
         elif self.hc_type == "setting":
             t0_new_list = t_data_range + dt_model_list
-        print(t0_new_list)
+        # print(t0_new_list)
         return np.mean(t0_new_list)
 
 
