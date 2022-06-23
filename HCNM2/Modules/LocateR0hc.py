@@ -6,6 +6,7 @@ import numpy as np
 
 import Modules.tools as tools
 import Modules.constants as constants
+from Modules.calculate_psi import calculate_psi
 
 
 # This class locates r0 for both the rising and setting crossing
@@ -15,6 +16,7 @@ class LocateR0hc:
 
     def __init__(self, obs_dict, r_array, v_array, t_array):
         # Unpack inputs
+        self.obs_dict = obs_dict
         self.hc_type = obs_dict["hc_type"]
         self.starECI = obs_dict["starECI"]
         self.crossing_time_range = obs_dict["crossing_time_range"]
@@ -53,8 +55,25 @@ class LocateR0hc:
         return A_2d, r0_2d
 
     def get_t0_guess_indices(self):
-        # TODO: Make this search range a function of the out-of-plane angle, integrate a gradient descent
-        r0_guess_indices = np.isclose(self.r_array, self.r0_2d, 0.1)
+        if self.obs_dict['detector'] == "RXTE":
+            psi = np.rad2deg(calculate_psi(self.obs_dict))   # out-of plane angle (deg)
+            print(f"psi = {psi}")
+            if abs(psi) < 5:
+                search_factor = 0.005
+            elif abs(psi) < 10:
+                search_factor = 0.001
+            elif abs(psi) < 20:
+                search_factor = 0.05
+            elif abs(psi) < 30:
+                search_factor = 0.1
+            else:
+                search_factor = 0.1
+                print("Out-of plane angle greater than 30 deg. search_factor = 0.1")
+        else:
+            # NICER doesn't get very far out-of-plane
+            search_factor = 0.005
+        # TODO: Improve this algorithm... make a sort of gradient descent to find the tangent point
+        r0_guess_indices = np.isclose(self.r_array, self.r0_2d, search_factor)
 
         # 0.5% corresponds to ~15km or more for each component (0.005*3000=15)
 
