@@ -17,7 +17,8 @@ crabNICER = {   # BASIC OBSERVATION INFO
             "crossing_time_range": np.array([240165000.0, 240165500.0]),  # seconds in MET
             "spectrum_time_range": np.array([240165300.0, 240165400.0]),
             "f107": 75.2,
-            "ap": 2,
+            "Ap": 2,
+            "SN": 19,
 
             # PATHS TO DATA FILES (from cwd, HCNM2/)
 

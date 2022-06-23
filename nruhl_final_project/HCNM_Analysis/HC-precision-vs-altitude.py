@@ -30,8 +30,8 @@ def main():
         dt_list[i] = comp_obj.dt_e
         dr_list[i] = comp_obj.dt_e * sat.R_orbit * sat.omega
 
-    np.save("dr_list.npy", dr_list)
-    np.save("altitude_list.npy", altitude_list)
+    # np.save("dr_list.npy", dr_list)
+    # np.save("altitude_list.npy", altitude_list)
     # Plot results
     plt.figure(1)
     # plt.title(r"$\delta t_e$ uncertainty as a function of orbital altitude")

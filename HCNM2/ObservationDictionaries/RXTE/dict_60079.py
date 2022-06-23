@@ -20,8 +20,9 @@ dict_60079 = {   # BASIC OBSERVATION INFO
             # define time range as ~150 seconds before and after the top and bottom of rate_data plot
             "crossing_time_range": np.array([8400+2.5992e8, 8700+2.5992e8]),  # seconds in MET
             "t_mid_datetime": '2002-03-28T10:23:20',  # Not used, just for records
-            "f107": 176.2,  # last column in Kp_ap_1932.txt table (F10.7adj)
-            "ap": 3,  # fourth to last column in Kp_ap_1932.txt table (ap4: fourth 1/8 of the 24 hour day)
+            "f107": 175.6,
+            "Ap": 2,
+            "SN": 160,
 
             # PATHS TO DATA FILES
             "rossi_path": cwd + "/Data/RXTE/60079/FPorbit_Day3008",  # orbital solution

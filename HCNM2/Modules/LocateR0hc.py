@@ -11,7 +11,7 @@ import Modules.constants as constants
 # This class locates r0 for both the rising and setting crossing
 class LocateR0hc:
     n_step_size = 0.1   # km step size along the line-of-sight (LOS)
-    max_los_dist = 4000   # km, max distance that we look for graze point along the LOS
+    max_los_dist = 3000   # km, max distance that we look for graze point along the LOS
 
     def __init__(self, obs_dict, r_array, v_array, t_array):
         # Unpack inputs
@@ -32,6 +32,8 @@ class LocateR0hc:
         self.A_2d, self.r0_2d = self.get_initial_guess()
         self.t0_guess_list, self.r0_guess_list = self.get_t0_guess_indices()
         self.r0_hc, self.t0_model_index, self.graze_point, self.A_3d = self.locate_r0_numerical()
+        print(f"A_3d = {self.A_3d:.2f} km")
+        print(f"A_2d = {self.A_2d:.2f} km")
 
         # Other useful variables
         self.g_unit = self.graze_point / np.linalg.norm(self.graze_point)
@@ -51,7 +53,8 @@ class LocateR0hc:
         return A_2d, r0_2d
 
     def get_t0_guess_indices(self):
-        r0_guess_indices = np.isclose(self.r_array, self.r0_2d, 0.005)
+        # TODO: Make this search range a function of the out-of-plane angle, integrate a gradient descent
+        r0_guess_indices = np.isclose(self.r_array, self.r0_2d, 0.1)
 
         # 0.5% corresponds to ~15km or more for each component (0.005*3000=15)
 
@@ -95,15 +98,16 @@ class LocateR0hc:
             earth_radius_list = np.sqrt(earth_points[:, 0] ** 2 + earth_points[:, 1] ** 2 + earth_points[:, 2] ** 2)
 
             # Identify hc_type (note that this needs to be defined earlier)
-            if time_index == 0:
-                middle_index_los = np.argmin(los_mag_list)
-                if los_mag_list[middle_index_los] < earth_radius_list[middle_index_los]:
-                    hc_type = "rising"
-                elif los_mag_list[middle_index_los] > earth_radius_list[middle_index_los]:
-                    hc_type = "setting"
+            # if time_index == 0:
+            #     middle_index_los = np.argmin(los_mag_list)
+            #
+            #     if los_mag_list[middle_index_los] < earth_radius_list[middle_index_los]:
+            #         hc_type = "rising"
+            #     elif los_mag_list[middle_index_los] > earth_radius_list[middle_index_los]:
+            #         hc_type = "setting"
 
             # Check if we reached the tangent grazing point
-            # print(np.min(los_mag_list))
+            # print(np.min(los_mag_list)-np.min(earth_radius_list))
             if self.hc_type == "rising":
                 if all(los_mag_list >= earth_radius_list):
                     # Find the point of closest approach, the tangent point

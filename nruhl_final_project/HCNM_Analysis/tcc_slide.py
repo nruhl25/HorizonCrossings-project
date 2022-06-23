@@ -203,9 +203,9 @@ if __name__ == '__main__':
     # With the numbers that we're using, t0 ~ 2000 (rising) and 2305 (setting)
 
     plt.figure(1)
-    plt.plot(comp_obj.time_data, N0*comp_obj.transmit_data, '.', label=fr"Simulated Data ($N_0=244$, $s=0.05$)")
+    plt.plot(comp_obj.time_data, N0*comp_obj.transmit_data, '.', label=fr"Simulated Data ($N_0=${N0}, $s=0.05$)")
     plt.plot(t_hc, N0*comp_obj.transmit_model, label="Scaled Transmittance Model")
-    plt.ylabel(f"Counts per {bin_size} sec bin")
+    plt.ylabel(f"Counts per {bin_size} second time bin")
     plt.xlabel("Time (sec)")
     plt.legend()
 

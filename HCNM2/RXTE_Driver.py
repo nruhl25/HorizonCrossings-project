@@ -11,13 +11,14 @@ from Modules.get_unattenuated_rate_RXTE import get_unattenuated_rate_RXTE
 
 # import observation dictionary
 from ObservationDictionaries.RXTE.dict_60079 import dict_60079
+from ObservationDictionaries.RXTE.dict_50099 import dict_50099
 
 import numpy as np
 from pathlib import Path
 cwd = str(Path(__file__).parents[0])  # HCNM2/ is cwd
 
 # Choose observation
-obs_dict = dict_60079
+obs_dict = dict_50099
 
 # 1) Define orbit model
 r_array, v_array, t_array = OrbitModel.define_orbit_model(obs_dict, "rossi", time_step=0.01)
@@ -42,8 +43,8 @@ bin_size = 1.0
 # vars below used for reading in the correct data files
 obsid = obs_dict["obsID"]
 e_id = f"{e_band_ch[0]+1}_{e_band_ch[1]}"  # string identifier for the given energy band
-fn_rateTime = cwd + f"/Data/RXTE/{obsid}/{e_id}_matrices/{e_id}_rateTime.npy"
-fn_ampCenters = cwd + f"/Data/RXTE/{obsid}/{e_id}_matrices/{e_id}_ampCenters.npy"
+fn_rateTime = cwd + f"/Data/RXTE/{obsid}/matrices/{e_id}_matrices/{e_id}_rateTime.npy"
+fn_ampCenters = cwd + f"/Data/RXTE/{obsid}/matrices/{e_id}_matrices/{e_id}_ampCenters.npy"
 
 
 # 3b) Read in the data files

@@ -32,6 +32,7 @@ class TransmitModel:
     N_eff = 4   # Number of effective transmit steps for variable energy band (RXTE)
     dx = 0.005  # keV, energy step size (in a step of const xsect) to calc probability under the normalized spectrum
 
+    s_dist_max_km = 3000  # [km] must change for higher orbital altitudes (for 600 km, 2600 km works)
     ds_km = 0.5   # km, step size along the telescopic LOS
 
     pymsis_version = 00
@@ -55,9 +56,8 @@ class TransmitModel:
     def calculate_transmit_model(self):
 
         # determine densities along the LOS at all times during the crossing
-        s_dist_max_km = 3000  # [km] ~ 2400 km is half the LOS, do 3000 to be safe
         ds_cm = TransmitModel.ds_km * 10 ** 5  # step size, [cm]
-        s_list_km = np.arange(0, s_dist_max_km, TransmitModel.ds_km)   # Same size LOS at every time initially
+        s_list_km = np.arange(0, TransmitModel.s_dist_max_km, TransmitModel.ds_km)   # Same size LOS at every time initially
 
         density_array, density_tp_list = self.calculate_density_arrays(s_list_km)
 
@@ -65,7 +65,7 @@ class TransmitModel:
         effective_transmit = np.zeros_like(self.time_crossing_model, float)  # transmittance over time of crossing
         en1_list, en2_list = self.define_energy_integration_lists()   # different for RXTE/NICER
         a = 0
-        # prob_i = 1/TransmitModel.N_eff   # TODO: Temporary fix for RXTE testing
+        # prob_i = 1/TransmitModel.N_eff   # Temporary fix for integration testing
         for i in range(len(en1_list)):
             E_mean = np.mean([en1_list[i], en2_list[i]])
             prob_i = self.calc_spectrum_probability(en1_list[i], en2_list[i])
@@ -111,7 +111,7 @@ class TransmitModel:
                                                     lat=self.lat_gp,
                                                     alts=altitude_list,
                                                     f107=self.obs_dict["f107"],
-                                                    ap=self.obs_dict["ap"],
+                                                    ap=self.obs_dict["Ap"],
                                                     version=TransmitModel.pymsis_version)[1]
             density_tp_list[t_index] = los_densities[tangent_point_index]
 
@@ -156,9 +156,7 @@ class TransmitModel:
         else:
             dE = (self.e_band[1] - self.e_band[0])/TransmitModel.N_eff
             en1_list = np.arange(self.e_band[0], self.e_band[1], dE)
-            print(en1_list)
             en2_list = en1_list + dE
-            print(en2_list)
         return en1_list, en2_list
 
     def set_time_final(self):
