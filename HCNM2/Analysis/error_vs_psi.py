@@ -7,7 +7,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
-# Import Modules
+# Import Local Modules
 from Modules.OrbitModel import OrbitModel
 from Modules.LocateR0hc import LocateR0hc
 from Modules.TransmitModel import TransmitModel
@@ -17,11 +17,10 @@ from Modules.CurveComparison import CurveComparison
 from Modules.get_unattenuated_rate_RXTE import get_unattenuated_rate_RXTE
 from Modules.calculate_psi import calculate_psi
 
-# Import observation dictionaries
-from ObservationDictionaries.RXTE.all_dicts import *
-
 cwd = str(Path(__file__).parents[1])  # HCNM2/ is cwd
 
+# Import observation dictionaries
+from ObservationDictionaries.RXTE.all_dicts import all_dicts
 
 # This function analyzes a single energy band of an RXTE horizon crossing
 # OUTPUTS: t0_e, dt_e, t0_model
@@ -82,39 +81,51 @@ def err_vs_psi(x, a, b):
 
 
 def main():
-    all_dicts = [dict_91802, dict_60079, dict_50099, dict_40805, dict_50098]
-    obsID_list = []  # to be filled with obsid's
-    Dt_list = []   # sec
-    dt_list = []  # sec, standard error
-    psi_list = []  # deg out of plane
 
-    e_band_ch = [7-1, 9]
-    e_band_kev = channel_to_keV_epoch5(e_band_ch)
-    for obs_dict in all_dicts:
-        t0_e, dt_e, t0_model = RXTE_driver(obs_dict, e_band_ch)
-        psi = np.rad2deg(calculate_psi(obs_dict))
+    e_band_ch_array = np.array([[7-1, 9],
+                                [10-1, 12],
+                                [13-1, 15],
+                                [16-1, 18],
+                                [19-1, 21],
+                                [22-1, 24],
+                                [25-1, 27],
+                                [28-1, 30]])
 
-        plt.scatter(psi, abs(t0_e-t0_model), label=obs_dict['obsID'])
+    for e_band_ch in e_band_ch_array:
+        e_band_kev = channel_to_keV_epoch5(e_band_ch)
+        plt.figure()
+    
+        obsID_list = []  # to be filled with obsid's
+        Dt_list = []   # sec
+        dt_list = []  # sec, standard error
+        psi_list = []  # deg out of plane
 
-        # add all but 50098 to list
-        if obs_dict['obsID'] != 50098:
-            Dt_list.append(abs(t0_e-t0_model))
-            dt_list.append(dt_e)
-            psi_list.append(psi)
-            obsID_list.append(obs_dict['obsID'])
+        for obs_dict in all_dicts:
+            t0_e, dt_e, t0_model = RXTE_driver(obs_dict, e_band_ch)
+            psi = np.rad2deg(calculate_psi(obs_dict))
 
-    # Calculate and plot trendline
-    popt, pcov = curve_fit(err_vs_psi, xdata=psi_list, ydata=Dt_list)
-    a, b = popt
-    x = np.linspace(min(psi_list), max(psi_list), 1000)
-    y = err_vs_psi(x, a, b)
-    plt.plot(x, y, label=fr"$\Delta t$ = {a:.2f}$\psi$+{b:.2f}")
+            plt.scatter(psi, abs(t0_e-t0_model), label=obs_dict['obsID'])
 
-    plt.title(f"RXTE Horizon Crossings of Crab Nebula ({e_band_kev[0]}-{e_band_kev[1]} keV)")
-    plt.xlabel(r"Out-of-plane angle to source, $\psi$ (deg)")
-    plt.ylabel(r"HCNM measurement error, $\Delta t$ (sec)")
-    plt.legend()
+            # Don't use 50098 in the trendline
+            if obs_dict['obsID'] != 50098:
+                Dt_list.append(abs(t0_e-t0_model))
+                dt_list.append(dt_e)
+                psi_list.append(psi)
+                obsID_list.append(obs_dict['obsID'])
+
+        # Calculate and plot trendline
+        popt, pcov = curve_fit(err_vs_psi, xdata=psi_list, ydata=Dt_list)
+        a, b = popt
+        x = np.linspace(min(psi_list), max(psi_list), 1000)
+        y = err_vs_psi(x, a, b)
+        plt.plot(x, y, label=fr"$\Delta t$ = {a:.2f}$\psi$+{b:.2f}")
+
+        plt.title(f"RXTE Horizon Crossings of Crab Nebula ({e_band_kev[0]}-{e_band_kev[1]} keV)")
+        plt.xlabel(r"Out-of-plane angle to source, $\psi$ (deg)")
+        plt.ylabel(r"HCNM measurement error, $\Delta t$ (sec)")
+        plt.legend()
     plt.show()
+    return 0
 
 
 if __name__ == "__main__":

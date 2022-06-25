@@ -22,10 +22,10 @@ e_band_array = np.array([[1.0, 2.0],
                          [4.0, 5.0]])
 
 # 1) Define orbit model
-r_array, t_array = OrbitModel.define_orbit_model(obs_dict, "mkf", time_step=0.01)
+r_array, v_array, t_array = OrbitModel.define_orbit_model(obs_dict, "mkf", time_step=0.01)
 
 # 2) LocateR0hc (must know hc_type here (from obs_dict or step 1))
-r0_obj = LocateR0hc(obs_dict, r_array, t_array)
+r0_obj = LocateR0hc(obs_dict, r_array, v_array, t_array)
 t0_model_index, lat_gp, lon_gp = r0_obj.return_r0_data()
 del r0_obj
 

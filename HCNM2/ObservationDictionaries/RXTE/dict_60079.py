@@ -11,9 +11,9 @@ dict_60079 = {   # BASIC OBSERVATION INFO
             "obsID": 60079,
             "epoch": 5,
             "source_name": "Crab Nebula",
-            "source_RA": 83.63426,  # deg
-            "source_DEC": 22.010,  # deg
-            "starECI": tools.celestial_to_geocentric(np.deg2rad(83.63426), np.deg2rad(22.010)),
+            "source_RA": 83.6326,  # deg
+            "source_DEC": 22.0155,  # deg
+            "starECI": tools.celestial_to_geocentric(np.deg2rad(83.6326), np.deg2rad(22.0155)),
             "hc_type": "setting",
 
             # USER-DEFINED DATA

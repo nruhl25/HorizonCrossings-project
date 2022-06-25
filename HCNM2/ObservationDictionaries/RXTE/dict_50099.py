@@ -11,14 +11,14 @@ dict_50099 = {   # BASIC OBSERVATION INFO
             "obsID": 50099,
             "epoch": 5,
             "source_name": "Crab Nebula",
-            "source_RA": 83.633,  # deg
+            "source_RA": 83.6328,  # deg
             "source_DEC": 22.015,  # deg
-            "starECI": tools.celestial_to_geocentric(np.deg2rad(83.633), np.deg2rad(22.015)),
+            "starECI": tools.celestial_to_geocentric(np.deg2rad(83.6328), np.deg2rad(22.015)),
             "hc_type": "setting",
 
             # USER-DEFINED DATA
             "crossing_time_range": np.array([227260850, 227261295]),  # seconds in MET
-            "t_mid_datetime": 'NONE',  # Not used, just for records
+            "t_mid_datetime": '2001-03-15T8:4:32',  # Not used, just for records
             "f107": 134.7,
             "Ap": 2,
             "SN": 110,

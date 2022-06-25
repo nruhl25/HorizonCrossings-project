@@ -5,3 +5,5 @@ from ObservationDictionaries.RXTE.dict_50098 import dict_50098
 from ObservationDictionaries.RXTE.dict_50099 import dict_50099
 from ObservationDictionaries.RXTE.dict_60079 import dict_60079
 from ObservationDictionaries.RXTE.dict_91802 import dict_91802
+
+all_dicts = [dict_91802, dict_60079, dict_50099, dict_40805, dict_50098]

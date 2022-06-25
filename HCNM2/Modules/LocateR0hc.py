@@ -6,7 +6,6 @@ import numpy as np
 
 import Modules.tools as tools
 import Modules.constants as constants
-from Modules.calculate_psi import calculate_psi
 
 
 # This class locates r0 for both the rising and setting crossing
@@ -28,14 +27,16 @@ class LocateR0hc:
         self.v_array = v_array
         self.t_array = t_array
 
-        self.R_orbit, self.h_unit = self.define_R_orbit_h_unit()  # derived inputs
+        # derived inputs
+        self.R_orbit, self.h_unit = self.define_R_orbit_h_unit()
+        self.psi = np.rad2deg(
+            (np.pi/2)-np.arccos(np.dot(self.h_unit, self.starECI)))  # out-of plane angle (deg)
+
 
         # Sequential steps of the algorithm
         self.A_2d, self.r0_2d = self.get_initial_guess()
         self.t0_guess_list, self.r0_guess_list = self.get_t0_guess_indices()
         self.r0_hc, self.t0_model_index, self.graze_point, self.A_3d = self.locate_r0_numerical()
-        print(f"A_3d = {self.A_3d:.2f} km")
-        print(f"A_2d = {self.A_2d:.2f} km")
 
         # Other useful variables
         self.g_unit = self.graze_point / np.linalg.norm(self.graze_point)
@@ -56,15 +57,14 @@ class LocateR0hc:
 
     def get_t0_guess_indices(self):
         if self.obs_dict['detector'] == "RXTE":
-            psi = np.rad2deg(calculate_psi(self.obs_dict))   # out-of plane angle (deg)
-            print(f"psi = {psi}")
-            if abs(psi) < 5:
+            print(f"psi = {self.psi}")
+            if abs(self.psi) < 5:
                 search_factor = 0.005
-            elif abs(psi) < 10:
+            elif abs(self.psi) < 10:
                 search_factor = 0.001
-            elif abs(psi) < 20:
+            elif abs(self.psi) < 20:
                 search_factor = 0.05
-            elif abs(psi) < 30:
+            elif abs(self.psi) < 30:
                 search_factor = 0.1
             else:
                 search_factor = 0.1
@@ -159,9 +159,10 @@ class LocateR0hc:
     def return_r0_data(self):
         return self.t0_model_index, self.lat_gp, self.lon_gp
 
-    # Function used to define R_orbit and h_unit at mid_time_crossing
+    # Function used to define R_orbit and h_unit at the middle of the crossing time period
     def define_R_orbit_h_unit(self):
-        mid_time_index = np.where(self.t_array >= np.mean(self.crossing_time_range))[0][0]
+        mid_time = (self.crossing_time_range[0]+self.crossing_time_range[1])/2
+        mid_time_index = np.where(self.t_array >= mid_time)[0][0]
         R_orbit = np.linalg.norm(self.r_array[mid_time_index])
         h_unit = np.cross(self.r_array[mid_time_index], self.v_array[mid_time_index])
         h_unit = h_unit / np.linalg.norm(h_unit)
