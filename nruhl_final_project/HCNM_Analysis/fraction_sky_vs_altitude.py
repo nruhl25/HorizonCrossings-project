@@ -13,7 +13,7 @@ def theta_max(H, R_planet=R_earth):
     theta = np.arctan2(R_planet, np.sqrt((R_planet+H)**2-R_planet**2))
     return theta
 
-H = np.arange(0, 30010, 10)
+H = np.arange(300, 3010, 10)
 
 plt.figure(1)
 
