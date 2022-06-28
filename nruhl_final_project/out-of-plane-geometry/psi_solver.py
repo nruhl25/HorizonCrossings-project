@@ -87,13 +87,14 @@ def find_r0hc(s_unit, R_orbit):
     t_last = t1 - 1  # initial guess for secant method
 
     b_last = 2*R_orbit  # initialization to enter for loop
+    delta = 1.0  # sec time error, initialization to enter for loop
     graze_tolerance = 1e-3 # 75 m, altitude tolerance for identifying the graze point (max difference between  geodetic and geocentric altitude)
     num_iter = 1
-    while(abs(b_last)>graze_tolerance):
+    while(abs(b_last) > graze_tolerance and num_iter < 25):  # num_iter < 50
         b = f(t, s_unit, R_orbit)
         m = (f(t, s_unit, R_orbit) - f(t_last, s_unit, R_orbit))/(t-t_last)
-        if b is np.nan or m is np.nan or abs(b_last) < abs(b):
-            # b must be monotonically decreasing
+        if b is np.nan or m is np.nan:  
+            ## or abs(b_last) < abs(b) removed this condition since < 700 km it's not monotonically decreasing
             # No solution found (r0_hc will have a 'nan' in it)
             break
         delta = b/m
@@ -103,7 +104,7 @@ def find_r0hc(s_unit, R_orbit):
         num_iter += 1
 
     # If we broke out of the loop, r0_hc will include a 'nan'
-    if b is np.nan or m is np.nan or abs(b_last) < abs(b):
+    if b is np.nan or m is np.nan or num_iter >= 25:
         r0_hc = np.array([np.nan, np.nan, np.nan])
     else:
         r0_hc = r(t, R_orbit)
