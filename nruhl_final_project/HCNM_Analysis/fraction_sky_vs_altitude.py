@@ -3,7 +3,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-R_earth = 6378  # km
+R_earth = 6371  # km
+# For the most forgiving model of theta_max, I think that we would want to use the polar radius of the earth: 6356.752 km
 def F(H, R_planet=R_earth):
     atan_term = 0.5*np.arctan2(R_planet, np.sqrt((H+R_planet)**2-R_planet**2))
     F = 1 - 2*np.sin((np.pi/4) - atan_term)**2

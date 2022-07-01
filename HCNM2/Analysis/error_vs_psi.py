@@ -9,8 +9,8 @@ from scipy.optimize import curve_fit
 
 # Import Local Modules
 from Modules.OrbitModel import OrbitModel
-from Modules.LocateR0hc import LocateR0hc
-from Modules.TransmitModel import TransmitModel
+from Modules.LocateR0hc2 import LocateR0hc2
+from Modules.TransmitModel2 import TransmitModel2
 from Modules.generate_nans_rxte import generate_nans_rxte
 from Preprocessing.RXTE_channel_to_keV import channel_to_keV_epoch5
 from Modules.CurveComparison import CurveComparison
@@ -25,20 +25,11 @@ from ObservationDictionaries.RXTE.all_dicts import all_dicts
 # This function analyzes a single energy band of an RXTE horizon crossing
 # OUTPUTS: t0_e, dt_e, t0_model
 def RXTE_driver(obs_dict, e_band_ch):
-    # 1) Define orbit model
-    r_array, v_array, t_array = OrbitModel.define_orbit_model(obs_dict, "rossi", time_step=0.01)
+    # 1) Define orbit model and locate r0_hc
+    r02_obj = LocateR0hc2(obs_dict, "rossi")
+    # r_array, v_array, t_array = OrbitModel.define_orbit_model(obs_dict, "rossi", time_step=0.01)
 
-    # 2) LocateR0hc (must know hc_type here, R_orbit and h_unit defined within the class)
-    r0_obj = LocateR0hc(obs_dict, r_array, v_array, t_array)
-    t0_model_index, lat_gp, lon_gp = r0_obj.return_r0_data()
-    t0_model = t_array[t0_model_index]
-    del r0_obj
-
-    v0 = v_array[t0_model_index]  # km/s, vector
-
-    orbit_derived_inputs = (r_array, t_array, t0_model_index, lat_gp, lon_gp)
-
-    # 3a) Define energy band
+    # 2a) Define energy band
     e_band_kev = channel_to_keV_epoch5(e_band_ch)
     bin_size = 1.0
 
@@ -48,7 +39,7 @@ def RXTE_driver(obs_dict, e_band_ch):
     fn_rateTime = cwd + f"/Data/RXTE/{obsid}/matrices/{e_id}_matrices/{e_id}_rateTime.npy"
     fn_ampCenters = cwd + f"/Data/RXTE/{obsid}/matrices/{e_id}_matrices/{e_id}_ampCenters.npy"
 
-    # 3b) Read in the data files
+    # 2b) Read in the data files
     rateTime = np.load(fn_rateTime)
     ampCenters = np.load(fn_ampCenters)
 
@@ -60,20 +51,24 @@ def RXTE_driver(obs_dict, e_band_ch):
     unattenuated_rate = get_unattenuated_rate_RXTE(obs_dict, rate_data_raw, time_data_raw)
     print(f"unattenuated rate = {unattenuated_rate}")
 
-    # 4) Lengthen rate_data and time_data if necessary
+    # 3) Lengthen rate_data and time_data if necessary
     rate_data, time_data = generate_nans_rxte(obs_dict, rate_data_raw, time_data_raw)
 
-    # 5) Calculate transmittance model
-    eband_derived_inputs = (e_band_kev, bin_size, normalized_amplitudes, bin_centers_kev)
-    model_obj = TransmitModel(obs_dict, orbit_derived_inputs, eband_derived_inputs)
-    transmit_model, time_crossing_model = model_obj.calculate_transmit_model()
+    eband_derived_inputs = (e_band_kev, bin_size,
+                            normalized_amplitudes, bin_centers_kev)
 
-    # 6) Curve Comparison
+    # 4) Calculate transmittance model
+    model2_obj = TransmitModel2(r02_obj, eband_derived_inputs)
+    transmit_model = model2_obj.transmit_model
+    # Note that this is [0, time_final], not MET
+    time_crossing_model = model2_obj.time_crossing_model
+
+    # 5) Curve Comparison
     model_and_data_tuple = (time_crossing_model, transmit_model, time_data, rate_data, unattenuated_rate)
     comp_obj = CurveComparison(obs_dict, model_and_data_tuple)
     t0_e, dt_e = comp_obj.t0_e, comp_obj.dt_e
     del comp_obj
-    return t0_e, dt_e, t0_model
+    return t0_e, dt_e, r02_obj.t0_model
 
 
 def err_vs_psi(x, a, b):

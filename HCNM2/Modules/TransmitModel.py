@@ -35,7 +35,7 @@ class TransmitModel:
     s_dist_max_km = 3000  # [km] must change for higher orbital altitudes (for 600 km, 2600 km works)
     ds_km = 0.5   # km, step size along the telescopic LOS
 
-    pymsis_version = 00
+    pymsis_version = 2
 
     def __init__(self, obs_dict, orbit_derived_inputs, eband_derived_inputs):
         # Unpack inputs
@@ -160,7 +160,7 @@ class TransmitModel:
         return en1_list, en2_list
 
     def set_time_final(self):
-        return 150
+        return 175
 
     @classmethod
     def set_ds_km(cls, ds):
@@ -179,4 +179,4 @@ class TransmitModel:
         if version == 00 or version == 2:
             cls.pymsis_version = version
         else:
-            print("pymsis version must be either 2 or 00. 00 is being used as default")
+            print("pymsis version must be either 2 or 00. 2 is being used as default")

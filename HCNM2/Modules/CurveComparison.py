@@ -8,7 +8,7 @@ from scipy.interpolate import interp1d
 # obs_dict
 # model_and_data_tuple (5): time_model, transmit_model, time_data, rate_data, unattenuated rate (N)
 # Note that transmit_data is on a 0-1 scale
-# Note that in the length (time duration) of the model and data input arrays may be different
+# Note that the length (time duration) of the model and data input arrays may be different
 
 
 class CurveComparison:
@@ -19,6 +19,7 @@ class CurveComparison:
         self.obs_dict = obs_dict
         self.hc_type = self.obs_dict["hc_type"]
         self.time_model, self.transmit_model, self.time_data, self.rate_data, self.N = model_and_data_tuple
+        # Note that time_model is [0:time_final], not in seconds of MET (here, we ignore time from orbit so)
         self.transmit_data = self.rate_data / self.N
         self.bin_size = self.time_model[1] - self.time_model[0]    # Based on our definition of time_model
 
@@ -48,7 +49,7 @@ class CurveComparison:
             t0_1 = t50_approx_data - dt50_approx_model
         elif self.hc_type == "setting":
             # Note that this formula for t0_1 is different than the toy model, but necessary here
-            t0_1 = t50_approx_data + self.time_model[-1] - dt50_approx_model
+            t0_1 = t50_approx_data + (self.time_model[-1] - dt50_approx_model)
         return t0_1
 
     # This function slides the model past the data at time intervals of desired_precision and calculates chi_sq

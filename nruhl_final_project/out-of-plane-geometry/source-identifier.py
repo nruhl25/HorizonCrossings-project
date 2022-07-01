@@ -1,5 +1,6 @@
 # Author: Nathaniel Ruhl
-# The function sourceIdentifier(i, raan, H, source_ra, source_dec) takes in the inclination/raan/altitude of an orbit and source position in ra/dec (deg), and says whether source is a potential HC candidate or not
+# The function sourceIdentifier(i, raan, H, source_ra, source_dec) takes in the inclination/raan (deg) and altitude (km) of an orbit and the source position in ra/dec (deg), and says whether source is a potential HC candidate or not.
+# The function sourceGenerator(i, raan, H) creates a random ra/dec (deg) source position for the specified orbit
 
 R_earth = 6371.0  # km
 
@@ -37,9 +38,13 @@ def get_h_unit(i, raan):
 
 # Everything is in ECI coordinates
 def get_n_unit(h_unit):
-    n_unit = np.cross(np.array([0, 0, 1]), h_unit) / np.linalg.norm(np.cross(np.array([0, 0, 1]), h_unit))
+    if any(h_unit == np.array([0., 0., 1.])):
+        n_unit = np.array([1., 0., 0.])
+    else:
+        n_unit = np.cross(np.array([0, 0, 1]), h_unit) / np.linalg.norm(np.cross(np.array([0, 0, 1]), h_unit))
     return n_unit
 
+# Returns an angle in radians
 def theta_max(H, R_planet=R_earth):
     theta = np.arctan2(R_planet, np.sqrt((R_planet+H)**2-R_planet**2))
     return theta
@@ -56,6 +61,7 @@ def perifocal2eci(n_unit, h_unit, v_p):
     v_e = np.dot(T, v_p)
     return v_e
 
+# In-case we want to generate random orbital elements
 def generate_i_raan():
     raan = 360 * np.random.ranf()
     i = 360 * np.random.ranf() - 180
@@ -79,7 +85,7 @@ def sourceIdentifier(i, raan, H, source_ra, source_dec):
 # Return ra and dec of source in degrees
 def generateSource(i, raan, H):
     # Construct random/compatible out-of-plane angle psi
-    max_psi = theta_max(H)-np.deg2rad(1) # give a little breathing room for the locate r0 algorithm
+    max_psi = theta_max(H)-np.deg2rad(0.5) # give a little breathing room for the locate r0 algorithm
 
     psi_random = 2*(max_psi)*np.random.ranf() - max_psi  # rad (only positive here!)
     alpha_random = (np.pi/2) - psi_random  # complementary angle mad with pole vector, rad
@@ -88,8 +94,8 @@ def generateSource(i, raan, H):
 
     # Break down p_comp into a and b components
     nu_star = 2*np.pi*np.random.ranf()   # random source anomaly around orbital plane
-    a_rand = np.sqrt(1-h_comp**2)*np.sin(nu_star)
-    b_rand = np.sqrt(p_comp**2-a_rand**2)
+    a_rand = p_comp*np.cos(nu_star)
+    b_rand = p_comp*np.sin(nu_star)
     s_unit = np.array([a_rand, b_rand, h_comp])
 
     # transform into ECI frame
@@ -109,9 +115,9 @@ def main():
     # print("NICER Crab Crossing: ")
     # print(sourceIdentifier(H=436.72, i=51.736, raan=67.99, source_ra=83.633, source_dec=22.014))
 
-    oe_test = (50, 30, 420)   # i (deg), raan (deg), H (km). Test orbital elements
+    oe_test = (0, 30, 420)   # i (deg), raan (deg), H (km). Test orbital elements
     R_orbit = R_earth + 420
-    num_trials = 1000
+    num_trials = 100
     num_fails = 0
     for _ in range(num_trials):
         ra_test, dec_test, psi_test = generateSource(*oe_test)   # example compatible source
@@ -126,7 +132,7 @@ def main():
             if any(np.isnan(r0_hc)):
                 num_fails += 1
 
-    print(f"{num_fails} fails out of {num_trials} trials")
+    print(f"{num_fails} fails out of {num_trials} trials. This only works for h = [0, 0, 1] since the other script is not a function of h_unit")
     return 0
 
 

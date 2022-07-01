@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 # Import local modules
 from psi_solver import *  # GLOBAL VARIABLE R_planet DEFINED IN PSI_SOLVER.PY
+R_planet = 6378.0  # over-ride psi_solver since the simulation was done with this
 
 # geometrical formula
 def theta_max(H):
@@ -78,6 +79,12 @@ def plot_theta_max_data():
     plt.ylabel("Maximumum out-of-plane angle (deg)")
     plt.xlabel("Orbital altitude (km)")
     plt.ylim([min(psi_max_list)-5, max(psi_max_list)+5])
+
+    plt.figure(2)
+    plt.title("Errors")
+    plt.plot(altitude_list, psi_max_list - theta_max(altitude_list))
+
+    print(f"Max difference = {np.max(psi_max_list - theta_max(altitude_list))} +/- {psi_err_list[0]} deg")
     plt.grid()
     plt.legend()
     plt.show()
@@ -87,8 +94,8 @@ def plot_theta_max_data():
 if __name__ == "__main__":
     import time
     start_time = time.time()
-    main()
-    # plot_theta_max_data()
+    # main()
+    plot_theta_max_data()
     print("--- %s seconds ---" % (time.time() - start_time))
 
 

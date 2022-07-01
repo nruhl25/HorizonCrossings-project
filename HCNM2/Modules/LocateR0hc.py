@@ -32,7 +32,6 @@ class LocateR0hc:
         self.psi = np.rad2deg(
             (np.pi/2)-np.arccos(np.dot(self.h_unit, self.starECI)))  # out-of plane angle (deg)
 
-
         # Sequential steps of the algorithm
         self.A_2d, self.r0_2d = self.get_initial_guess()
         self.t0_guess_list, self.r0_guess_list = self.get_t0_guess_indices()
@@ -41,7 +40,8 @@ class LocateR0hc:
         # Other useful variables
         self.g_unit = self.graze_point / np.linalg.norm(self.graze_point)
         self.t0_model = t_array[self.t0_model_index]
-        self.lat_gp, self.lon_gp, _ = tools.eci2geodetic_pymap_vector(self.graze_point, self.t0_model, self.year0)
+        self.lat_gp, self.lon_gp, alt_gp = tools.eci2geodetic_pymap_vector(self.graze_point, self.t0_model, self.year0)
+        print(f"TransmitModel: alt_gp={alt_gp} km")
 
     def get_initial_guess(self):
         starECI_proj = tools.proj_on_orbit(self.starECI, self.h_unit)

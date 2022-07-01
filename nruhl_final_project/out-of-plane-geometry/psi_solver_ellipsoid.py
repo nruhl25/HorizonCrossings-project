@@ -89,8 +89,6 @@ def f(t, s_unit, R_orbit):
     return alt_tp
 
 # This function returns r0_hc for an arbitrary out-of-plane angle, psi (deg).
-
-
 def find_r0hc(s_unit, R_orbit):
     # Derived values
     psi_deg = np.rad2deg((np.pi/2)-np.arccos(np.dot(h_unit, s_unit)))
