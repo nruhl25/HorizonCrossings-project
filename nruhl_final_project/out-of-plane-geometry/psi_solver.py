@@ -114,7 +114,7 @@ def find_r0hc(s_unit, R_orbit):
     # print(f"r0_model1 = {r(t1, R_orbit)}")
     # print(f"r0_hc = {r0_hc}")
     # print("-------------------")
-    return r0_hc, num_iter
+    return r0_hc, b_last, num_iter
 
 # This function rotates the in-plane source s1 = np.array([0, 1, 0]) (perifocal fram)
 #  about the x-axis by psi_deg and returns r0_hc
@@ -127,8 +127,8 @@ def rotate_and_find_r0hc(psi_deg, R_orbit, s1=np.array([0, 1, 0])):
 
     s_unit = np.dot(R_x, s1)
 
-    r0_hc, num_iter = find_r0hc(s_unit, R_orbit)
-    return r0_hc, s_unit, num_iter
+    r0_hc, b_last, num_iter = find_r0hc(s_unit, R_orbit)
+    return r0_hc, b_last, num_iter
 
 # This function calculates and plots r0_hc for a single orbit up to psi_break
 # Input: H is the orbital alitude above R_planet (km)
@@ -139,27 +139,33 @@ def main(H, d_psi):
     T = np.sqrt(4*np.pi**2/(G*M_planet) * (R_orbit*10**3)**3)
     t_orbit = np.arange(0, T, 1)   # must be defined to create orbit_vec
     orbit_vec = r(t_orbit, R_orbit)
-    plt.figure()
+    plt.figure(1)
     plt.title(f"{hc_type} horizon crossing at H = {H} km above Earth")
     plt.scatter(orbit_vec[:, 0], orbit_vec[:, 1], s=1)
+    plt.figure(2)
+    plt.title("Error in tangent altitudde (km) vs out-of-plane angle")
 
     # find the r0 value for psi_list
     psi_list = np.arange(0, 80, d_psi)  # max seems to be 69 for the ISS orbit
     for psi in psi_list:
-        r0_hc, s_unit, num_iter = rotate_and_find_r0hc(psi, R_orbit)
+        r0_hc, gp_error, num_iter = rotate_and_find_r0hc(psi, R_orbit)
         if np.isnan(r0_hc).any():
             psi_break = psi
             print(f"H={H}km")
             print(f'psi_break = {psi_break} deg with {num_iter} iterations')
             break
         else:
+            plt.figure(1)
             plt.scatter(r0_hc[0], r0_hc[1], label=fr"$\psi = ${psi}$^\circ$")
+            plt.figure(2)
+            plt.scatter(psi, gp_error)
             continue
 
     psi_err = d_psi/2
     psi_max = psi_break - psi_err
     print(f"Therefore, psi_max={psi_max}+/-{psi_err} deg")
     plt.plot([], [], 'k', label=fr"$\psi_{{max}}$={psi_max}$\pm${psi_err}$^\circ$")
+    plt.figure(1)
     plt.legend()
     plt.show()
     return 0

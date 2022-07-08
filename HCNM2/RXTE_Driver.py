@@ -24,7 +24,7 @@ from pathlib import Path
 cwd = str(Path(__file__).parents[0])  # HCNM2/ is cwd
 
 # Choose observation
-obs_dict = dict_60079
+obs_dict = dict_50099 # dict_60079
 
 # 1) Define orbit model
 r_array, v_array, t_array = OrbitModel.define_orbit_model(

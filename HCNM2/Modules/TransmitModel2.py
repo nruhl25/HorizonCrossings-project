@@ -22,11 +22,11 @@ class TransmitModel2:
     mix_Ar = 0.01
 
     # keV, default step size for the effective transmittance model (NICER)
-    dE_eff = 0.20
+    dE_eff = 0.10
     # Number of effective transmit steps for variable size energy band (RXTE)
     N_eff = 4
     # keV, energy step size (in a step of const xsect) to calc probability under the normalized spectrum
-    dx = 0.005
+    dx = 0.0005
 
     ds_km = 0.5   # km, step size along the telescopic LOS
 

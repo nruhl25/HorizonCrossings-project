@@ -74,19 +74,20 @@ def plot_theta_max_data():
     psi_err_list = arr[:,1]
     altitude_list = arr[:,2]
     plt.figure(1)
-    plt.plot(alt_list_model, theta_max(alt_list_model), label=r"$\theta_{max}$ model")
-    plt.errorbar(x=altitude_list, y=psi_max_list, yerr=psi_err_list, label="Algorithm divergence", fmt='+')
-    plt.ylabel("Maximumum out-of-plane angle (deg)")
+    # plt.stem(altitude_list, psi_max_list, label="Algorithm Convergence/Divergence")
+    plt.plot(alt_list_model, theta_max(alt_list_model), 'r', label=r"Model $\theta_{max}$")
+    plt.errorbar(x=altitude_list, y=psi_max_list, yerr=psi_err_list, label=r"Simulated $\theta_{{max}}$", fmt='+')
+    plt.ylabel("Maximum out-of-plane angle (deg)")
     plt.xlabel("Orbital altitude (km)")
-    plt.ylim([min(psi_max_list)-5, max(psi_max_list)+5])
-
-    plt.figure(2)
-    plt.title("Errors")
-    plt.plot(altitude_list, psi_max_list - theta_max(altitude_list))
-
-    print(f"Max difference = {np.max(psi_max_list - theta_max(altitude_list))} +/- {psi_err_list[0]} deg")
     plt.grid()
     plt.legend()
+
+    # plt.figure(2)
+    # plt.title("Errors")
+    # plt.plot(altitude_list, psi_max_list - theta_max(altitude_list))
+
+    print(f"Max difference = {np.max(psi_max_list - theta_max(altitude_list))} +/- {psi_err_list[0]} deg")
+
     plt.show()
     return 0
 

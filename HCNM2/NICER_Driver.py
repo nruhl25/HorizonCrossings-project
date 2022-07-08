@@ -4,10 +4,10 @@
 
 # import local modules for HCNM Analysis
 from Modules.OrbitModel import OrbitModel
-from Modules.LocateR0hc import LocateR0hc
+from Modules.LocateR0hc2 import LocateR0hc2
 from Modules.ReadEVT import ReadEVT
 from Modules.NormalizeSpectrumNICER import NormalizeSpectrumNICER
-from Modules.TransmitModel import TransmitModel
+from Modules.TransmitModel2 import TransmitModel2
 from Modules.CurveComparison import CurveComparison
 from Modules.weighted_mean_HC import calc_weighted_mean
 
@@ -20,30 +20,20 @@ import numpy as np
 
 
 def main():
-    obs_dict = v4641NICER
+    # remember, with crab, you mut alter the curve comparison range below
+    obs_dict = crabNICER
     bin_size = 1.0   # sec
-    e_band_array = np.array([[1.0, 2.0],
-                             [2.0, 3.0],
-                             [3.0, 4.0],
-                             [4.0, 5.0]])
+    e_band_array = np.array([[1.0, 2.0], [2.0, 3.0], [3.0, 4.0], [4.0, 5.0]])
 
-    # 1) Define orbit model
-    r_array, v_array, t_array = OrbitModel.define_orbit_model(obs_dict, "mkf", time_step=0.01)
+    # 1) LocateR0hc2
 
-    # 2) LocateR0hc (must know hc_type here, R_orbit and h_unit defined within the class)
-    r0_obj = LocateR0hc(obs_dict, r_array, v_array, t_array)
-    t0_model_index, lat_gp, lon_gp = r0_obj.return_r0_data()
-    del r0_obj
-
-    v0 = v_array[t0_model_index]
-    orbit_derived_inputs = (r_array, t_array, t0_model_index, lat_gp, lon_gp)
+    r02_obj = LocateR0hc2(obs_dict, "mkf")
 
     # Lists of HCNM measurements for each e_band
     t0_e_list = []
     dt_e_list = []
     for e_band in e_band_array:
-        # 3) Bin the data.
-        # Can also identify hc_type in this step.
+        # 2) Bin the data
         evt_obj = ReadEVT(obs_dict)
         rate_data, time_data, unattenuated_rate = evt_obj.return_crossing_data(e_band, bin_size)
 
@@ -51,14 +41,18 @@ def main():
         normalized_amplitudes, bin_centers = spec_obj.return_spectrum_data()
         del evt_obj
         del spec_obj
-        # 5)
+        
         eband_derived_inputs = (e_band, bin_size, normalized_amplitudes, bin_centers)
 
-        model_obj = TransmitModel(obs_dict, orbit_derived_inputs, eband_derived_inputs)
-        transmit_model, time_crossing_model = model_obj.calculate_transmit_model()
+        # 3) Calculate the model transmittance curve
+        TransmitModel2.set_pymsis_version(00)  # Must be 2000 to match with Breck 2020 results
+        model2_obj = TransmitModel2(r02_obj, eband_derived_inputs)
+        transmit_model2 = model2_obj.transmit_model
+        # Note that this is [0, time_final], not MET
+        time_crossing_model2 = model2_obj.time_crossing_model
 
-        # 6)
-        model_and_data_tuple = (time_crossing_model, transmit_model, time_data, rate_data, unattenuated_rate)
+        # 4) Curve comparison: calculate t0_e
+        model_and_data_tuple = (time_crossing_model2, transmit_model2, time_data, rate_data, unattenuated_rate)
 
         CurveComparison.set_comp_range([0.01, 0.99])
         comp_obj = CurveComparison(obs_dict, model_and_data_tuple)
@@ -69,18 +63,19 @@ def main():
         dt_e_list.append(dt_e)
 
         print(f"e_band: {e_band[0]} - {e_band[1]} keV results: ")
-        print(f"Time at the position r0_hc = {r_array[t0_model_index]}:")
+        print(f"Time at r0_hc = {r02_obj.r0_hc}: ")
         print(f"Crossing: t0_e = {t0_e} +/- {dt_e} sec")
-        print(f"Input Orbit Model: t0 = {t_array[t0_model_index]} sec")
-        print(f"Crossing position uncertainty: +/- {np.linalg.norm(v0)*dt_e:.2f} km")
+        print(f"Input Orbit Model: t0 = {r02_obj.t0_model} sec")
+        print(f"Crossing position uncertainty: +/- {np.linalg.norm(r02_obj.v0_model)*dt_e:.2f} km")
         print("-----------------------")
 
+    # 5)
     t0, dt = calc_weighted_mean(t0_e_list, dt_e_list)
-    dr = np.linalg.norm(v0)*dt
+    dr = 7.6*dt
     print("Weighted mean results: ")
     print(f"Crossing: t0_e = {t0:.3f} +/- {dt:.3f} sec")
     print(f"Crossing position uncertainty: +/- {dr:.3f} km")
-    print(f"Input Orbit Model: t0 = {t_array[t0_model_index]:.3f} sec")
+    print(f"Input Orbit Model: t0 = {r02_obj.t0_model} sec")
 
 
 if __name__ == '__main__':

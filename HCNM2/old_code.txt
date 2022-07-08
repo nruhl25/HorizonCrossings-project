@@ -1,0 +1,14 @@
+This is the method for reading in the orbit file, LocateR0hc and TransmitModel before I introduced the new algorithm LocateR0hc2:
+
+r_array, v_array, t_array = OrbitModel.define_orbit_model(obs_dict, "mkf", time_step=0.01)
+
+# 2) LocateR0hc (must know hc_type here, R_orbit and h_unit defined within the class)
+r0_obj = LocateR0hc(obs_dict, r_array, v_array, t_array)
+t0_model_index, lat_gp, lon_gp = r0_obj.return_r0_data()
+del r0_obj
+
+v0 = v_array[t0_model_index]
+orbit_derived_inputs = (r_array, t_array, t0_model_index, lat_gp, lon_gp)
+
+model_obj = TransmitModel(obs_dict, orbit_derived_inputs, eband_derived_inputs)
+transmit_model, time_crossing_model = model_obj.calculate_transmit_model()

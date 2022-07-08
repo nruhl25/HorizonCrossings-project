@@ -1,8 +1,10 @@
 # Author: Nathaniel Ruhl
-# This script applies the "locate r0_hc" algorithm to an ellipsoid earth.
+# This script applies the "locate r0_hc" algorithm to an ellipsoid earth and uses the geodetic latitude instead of geocentric latitude.
 
 import numpy as np
 import matplotlib.pyplot as plt
+
+from psi_solver_ellipsoid import point_on_earth_azimuth_polar
 
 # Global variables
 hc_type = "rising"   # or "setting"
@@ -17,26 +19,60 @@ b_e = 6378.137  # [km] semi-major axis
 c_e = 6356.752  # [km] semi-minor axis
 e = 0.08182   # Eccentricity from Bate et al.
 
-# theta is azimuthal angle, phi is polar (rad) (weird, right?)
-def point_on_earth_azimuth_polar(theta_list, phi_list):
-    if isinstance(phi_list, int) or isinstance(phi_list, float):
-        # theta and phi are single values
-        phi = phi_list
-        theta = theta_list
-        x = a_e * np.cos(theta) * np.sin(phi)
-        y = b_e * np.sin(theta) * np.sin(phi)
-        z = c_e * np.cos(phi)
-        return np.array([x, y, z])
+# This function converts an eci coordinate to lat/lon/height using the geocentric to geodetic altitude conversion (Clynch, 2008)
+# INPUTS: eci_vec (km)
+# OUTPUTS: lat (rad), lon (deg) (not from greenwhich), height (km)
+
+def eci2llh(eci_vec):
+    x = eci_vec[0]
+    y = eci_vec[1]
+    z = eci_vec[2]
+    # 1) Compute earth-centered radius of point [km]
+    r = np.linalg.norm(eci_vec)
+    p = np.sqrt(x ** 2 + y ** 2)
+    lon = np.arctan2(y, x)
+
+    # 2) Start computational loop assuming phi_now = geocentric latitude
+    phi_now = np.arctan2(z, p)
+    h = calc_h(phi_now, eci_vec)  # became nan... why?
+    h_last = 1000000.0  # initialize to enter for loop
+    tolerance = 1e-4   # [km] --> 10 cm
+    while abs(h - h_last) > tolerance:
+        Rn = calc_Rn(phi_now)
+        phi_next = np.arctan((z/p)*(1-(Rn/(Rn+h))*e**2)**(-1.))
+        h_last = h
+        h = calc_h(phi_next, eci_vec)
+        phi_now = phi_next
+
+    lat = phi_now
+
+    return lat, lon, h
+
+# Helper functions for geocentric to geodetic conversion
+# INPUT: geodetic lat (rad)
+# OUTPUT: Rn (km)
+
+
+def calc_Rn(phi):
+    return a_e / np.sqrt(1-(e*np.sin(phi))**2)
+
+# This uses an equation for h (km) that does not diverge near the poles
+
+
+def calc_h(phi, eci_vec):
+    Rn = calc_Rn(phi)
+    if abs(phi) > np.deg2rad(80):
+        z = eci_vec[2]
+        L = z + e**2 * Rn * np.sin(phi)
+        h = (L/np.sin(phi)) - Rn
     else:
-        # theta and phi are BOTH lists
-        phi_column_vec = phi_list.reshape((len(phi_list), 1))
-        theta_column_vec = theta_list.reshape((len(theta_list), 1))
-        y = b_e * np.sin(theta_column_vec) * np.sin(phi_column_vec)
-        x = a_e * np.cos(theta_column_vec) * np.sin(phi_column_vec)
-        z = c_e * np.cos(phi_column_vec)
-        return np.hstack((x, y, z))
+        p = np.sqrt(eci_vec[0]**2 + eci_vec[1]**2)
+        h = (p / np.cos(phi)) - Rn
+    return h
 
 # Function to project the source onto the plane of the orbit
+
+
 def proj_on_orbit(r_source, h_unit):
     r_prime_source = r_source - h_unit * \
         np.dot(r_source, h_unit)   # project on orbit plane
@@ -45,6 +81,8 @@ def proj_on_orbit(r_source, h_unit):
     return r_prime_source
 
 # position of satelite in orbital model (or an interpolating function)
+
+
 def r(t, R_orbit):
     T = np.sqrt(4*np.pi**2/(G*M_planet) * (R_orbit*10**3)**3)
     omega = 2*np.pi/T
@@ -60,35 +98,43 @@ def r(t, R_orbit):
         z = 0.0
         return np.array([x, y, z])
 
-# Function to minimize when identifying r0
-
-
+# Tangent point as a function of time. Within this function, we have to do another Newton's method to find the "n" index for which 
 def f(t, s_unit, R_orbit):
-    # define the los
     # distance of half los for in-plane crossing
     A_2d = np.sqrt(R_orbit ** 2 - b_e ** 2)
     # km, max distance along LOS to look for grazing, a 3d los is always shorter than a 2d
-    n_max = 1.1*A_2d
-    # 0.1 km steps (a little larger than A_2d (incase the orbital radius changed)
-    n_list = np.arange(0, n_max, 0.1)
+
+    # Make an inital guess of the tangent point, using vectorization
+    n_list = np.arange(0, 1.1*A_2d, 0.1)
     n_column_vec = n_list.reshape((len(n_list), 1))
-
     starArray = np.ones((len(n_list), 3)) * s_unit
-    los = r(t, R_orbit) + n_column_vec * starArray
-    p_mag_list = np.linalg.norm(los, axis=1)  # List of magnitudes of poins along the LOS
-    # A_3d=0.1*np.argmin(p_mag) A_3d should in theory always be smaller than A_2d
+    los_array = r(t, R_orbit) + n_column_vec * starArray
+    # List of magnitudes of poins along the LOS
+    p_mag_list = np.linalg.norm(los_array, axis=1)
+    A_3d=0.1*np.argmin(p_mag_list)
 
-    # Solve for the polar angles corresponding to points on the LOS
-    polar_angles = np.arccos(los[:, 2] / p_mag_list)
-    planet_points = point_on_earth_azimuth_polar(
-        np.zeros_like(polar_angles), polar_angles)
-    R_planet_list = np.linalg.norm(planet_points, axis=1)
+    # Initialize gradient descent and secant method
+    learn_rate = 0.001
+    n = A_3d   # initial guess for n
+    n_last = A_3d + 1
+    alt_tol = 1e-5  # km, 1cm error tolerance for tangent altitude
+    alt_tp = 1000.0
+    alt_tp_last = eci2llh(r(t, R_orbit) + n_last * s_unit)[2]
+    num_iter = 0
+    while(abs(alt_tp - alt_tp_last) > alt_tol and num_iter < 20):
+        alt_tp = eci2llh(r(t, R_orbit) + n * s_unit)[2]
+        dh_dn = (alt_tp - alt_tp_last)/(n-n_last)  # Gradient
+        n_last = n.copy()
+        alt_tp_last = alt_tp.copy()
+        n -= learn_rate*dh_dn
+        alt_tp -= learn_rate*dh_dn**2
+        num_iter += 1
 
-    alt_tp = np.min(p_mag_list - R_planet_list)
-
-    return alt_tp
+    return alt_tp, num_iter, n
 
 # This function returns r0_hc for an arbitrary out-of-plane angle, psi (deg).
+
+
 def find_r0hc(s_unit, R_orbit):
     # Derived values
     psi_deg = np.rad2deg((np.pi/2)-np.arccos(np.dot(h_unit, s_unit)))
@@ -118,19 +164,20 @@ def find_r0hc(s_unit, R_orbit):
     b_last = 2*R_orbit  # initialization to enter for loop
     delta = 1.0  # sec time error, initialization to enter for loop
     # 75 m, altitude tolerance for identifying the graze point (max difference between  geodetic and geocentric altitude)
-    graze_tolerance = 1e-5
+    graze_tolerance = 1e-3  # km
     num_iter = 1
     while(abs(b_last) > graze_tolerance and num_iter < 25):
-        b = f(t, s_unit, R_orbit)
-        m = (f(t, s_unit, R_orbit) - f(t_last, s_unit, R_orbit))/(t-t_last)
+        b, num_iter_n, n = f(t, s_unit, R_orbit)
+        m = (f(t, s_unit, R_orbit)[0] - f(t_last, s_unit, R_orbit)[0])/(t-t_last)
         if b is np.nan or m is np.nan:
-            ## or abs(b_last) < abs(b) removed this condition since < 700 km it's not monotonically decreasing
             # No solution found (r0_hc will have a 'nan' in it)
             break
+        print(f"num_iter = {num_iter_n} to get n = {n} km, alt_tp = {b} km")
         delta = b/m
+        t -= delta
         b_last = b
         t_last = t
-        t -= delta
+        print(f"--- FINISHED {num_iter} ITERATION IN TIME ---")
         num_iter += 1
 
     # If we broke out of the loop, r0_hc will include a 'nan'
@@ -140,7 +187,7 @@ def find_r0hc(s_unit, R_orbit):
         r0_hc = r(t, R_orbit)
     print(f"psi = {psi_deg} deg")
     print(f"t0_model = {t} sec")
-    # print(f"{num_iter} iterations")
+    print(f"{num_iter} iterations over time")
     # print(f"r0_2d = {r0_2d}")
     # print(f"r0_model1 = {r(t1, R_orbit)}")
     # print(f"r0_hc = {r0_hc}")
@@ -149,6 +196,7 @@ def find_r0hc(s_unit, R_orbit):
 
 # This function rotates the in-plane source s1 = np.array([0, 1, 0]) (perifocal fram)
 #  about the x-axis by psi_deg and returns r0_hc
+
 
 def rotate_and_find_r0hc(psi_deg, R_orbit, s1=np.array([0, 1, 0])):
     # Rotate the source position
@@ -162,48 +210,22 @@ def rotate_and_find_r0hc(psi_deg, R_orbit, s1=np.array([0, 1, 0])):
     r0_hc, num_iter = find_r0hc(s_unit, R_orbit)
     return r0_hc, s_unit, num_iter
 
-# This function calculates and plots r0_hc for a single orbit up to psi_break
+# This function calculates and plots r0_hc for a single orbit for psi
 # Input: H is the orbital alitude above R_planet (km)
 # Input: d_psi is the step size (deg) in out-of-plane angle
 
-
-def main(R_orbit, d_psi):
-    # Plot the initial orbit
-    T = np.sqrt(4*np.pi**2/(G*M_planet) * (R_orbit*10**3)**3)
-    t_orbit = np.arange(0, T, 1)   # must be defined to create orbit_vec
-    orbit_vec = r(t_orbit, R_orbit)
-    plt.figure()
-    plt.title(f"{hc_type} horizon crossing at H={R_orbit-a_e}km Equatorial Orbit")
-    plt.scatter(orbit_vec[:, 0], orbit_vec[:, 1], s=1)
-
-    # find the r0 value for psi_list
-    psi_list = np.arange(0, 80, d_psi)  # max seems to be 69 for the ISS orbit
-    for psi in psi_list:
-        r0_hc, s_unit, num_iter = rotate_and_find_r0hc(psi, R_orbit)
-        if np.isnan(r0_hc).any():
-            psi_break = psi
-            print(f"H={R_orbit - a_e}km")
-            print(f'psi_break = {psi_break} deg with {num_iter} iterations')
-            break
-        else:
-            plt.scatter(r0_hc[0], r0_hc[1], label=fr"$\psi = ${psi}$^\circ$")
-            continue
-
-    psi_err = d_psi/2
-    psi_max = psi_break - psi_err
-    print(f"Therefore, psi_max={psi_max}+/-{psi_err} deg")
-    plt.plot(
-        [], [], 'k', label=fr"$\psi_{{max}}$={psi_max}$\pm${psi_err}$^\circ$")
-    plt.legend()
-    plt.show()
+def main(R_orbit, psi):
+    # find r0 for psi
+    r0_hc, s_unit, num_iter = rotate_and_find_r0hc(psi, R_orbit)
+    print(f"r0_hc = {r0_hc}")
     return 0
 
 
 if __name__ == '__main__':
     # Consider an equatorial Earth orbit at H=420 km:
-    main(R_orbit=a_e+420, d_psi=5)
+    main(R_orbit=a_e+420, psi=5)
 
-    # r0_km = np.array([-4512.40, 3844.34, -3326.14])
+    # r0_km = np.array([-4512.40+200, 3844.34-200, -3326.14+200])
 
     # # Code to test geocentric to geodetic algorithm
     # lat, lon, height = eci2llh(r0_km)

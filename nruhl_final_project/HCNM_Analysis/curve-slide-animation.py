@@ -7,19 +7,25 @@ from scipy.interpolate import interp1d
 import numpy as np
 import sys
 import os
+import matplotlib.animation as manimation
 # add working directory, str(Path(__file__).parents[1])
 sys.path.append(
     "/Users/nathanielruhl/Documents/HorizonCrossings-Summer22/nruhl_final_project/")
+
+# Define the meta data for the movie
+# FFMpegWriter = manimation.writers['ffmpeg']
+# metadata = dict(title='Movie test', artist='Nathaniel Ruhl')
+# writer = FFMpegWriter(fps=15, metadata=metadata)
 
 # import local modules
 from AnalyzeCrossing import AnalyzeCrossing
 
 # Global parameters to be used in the analysis
-cb_str = "Earth"
+cb_str = "Earth"  # P2: size of Earth, but a thinner atmosphere
 hc_type = "rising"
-N0 = 5378  # average number of unattenuated counts in data
+N0 = 10  # average number of unattenuated counts in data
 E_kev = 1.5
-H = 4000  # km, orbital altitude
+H = 400  # km, orbital altitude
 bin_size = 1.0
 # range of transmittance in which to compare the curves
 comp_range = [0.01, 0.99]
@@ -69,8 +75,8 @@ class CurveComparison:
         # First step to identify t0
         self.t0_1 = self.locate_t0_step1()
         self.t0_new = self.locate_t0_alternative()
-        import time
-        time.sleep(5)
+        # import time
+        # time.sleep(5)
         self.t0_e, self.t0_guess_list, self.chisq_list = self.locate_t0_step2()
         self.dt_e = self.analyze_chisq()
 
@@ -128,6 +134,9 @@ class CurveComparison:
 
         chisq_list = np.zeros(len(t_start_list))
         fig, ax = plt.subplots(1, 2)
+        fig.suptitle("Horizon Crossing Curve Comparison")
+        fig.supxlabel("Time (sec)")
+        # with writer.saving(fig, "writer_test.mp4", 100):
         for indx, t0_guess in enumerate(t_start_list):
             ax[0].clear()
             # define interpolating function and array for the model
@@ -142,7 +151,7 @@ class CurveComparison:
             
             # Note that however this interpolation is done, the model and data times need to be in the same order
             model_rate_vs_time = interp1d(
-                time_crossing_model, self.N0*self.transmit_model, kind='cubic')
+                time_crossing_model, self.N0*self.transmit_model, kind='linear')
             model_rate_interp = model_rate_vs_time(
                 time_crossing_data[weight_range])
 
@@ -162,10 +171,13 @@ class CurveComparison:
                 ax[1].plot(t0_guess, chisq, 'r.')
                 ax[0].set_xlim([min(time_crossing_data[weight_range]-1), max(time_crossing_data[weight_range])+1])
                 ax[0].set_ylim([0, max(rate_data[weight_range])+10])
+                ax[0].set_ylabel("Counts/sec")
+                ax[1].set_ylabel(r"$\chi^2$")
                 plt.pause(0.01)
+                # writer.grab_frame()
 
         t0_e = t_start_list[np.argmin(chisq_list)]
-
+        print(t0_e)
         plt.show()
 
         return t0_e, t_start_list, chisq_list
@@ -225,3 +237,4 @@ if __name__ == "__main__":
 
     sat = AnalyzeCrossing(cb_str, H, E_kev)
     comp_obj = CurveComparison(sat, hc_type, N0=N0)
+    print(comp_obj.dt_e)

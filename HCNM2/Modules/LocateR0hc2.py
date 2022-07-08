@@ -14,9 +14,10 @@ import Modules.tools as tools
 # Creates an interpolating function r(t) that is used in the algorithm to Locate r0_hc
 
 class OrbitModel2:
-    def __init__(self, obs_dict, orbit_model):
+    def __init__(self, obs_dict, orbit_model, use_geodetic=False):
         self.obs_dict = obs_dict
         self.orbit_model = orbit_model
+        self.use_geodetic = use_geodetic  # default is to use geodetic to save run time
         self.r_array, self.v_array, self. t_array = self.read_orbit_model()
         self.R_orbit, self.h_unit = self.define_R_orbit_h_unit()
 
@@ -76,6 +77,13 @@ class OrbitModel2:
         r_z = self.rz_interpolator(t)
         return np.array([r_x, r_y, r_z])
 
+    # Interpolating function used to define v0 at a single time t0
+    def v(self, t):
+        v_x = interp1d(self.t_array, self.v_array[:, 0], kind="cubic")
+        v_y = interp1d(self.t_array, self.v_array[:, 1], kind="cubic")
+        v_z = interp1d(self.t_array, self.v_array[:, 2], kind="cubic")
+        return np.array([v_x(t), v_y(t), v_z(t)])
+
     # This method is a general version of the above functio
     # t is the list of times that corresponds to r_array or v_array, the state "x"
     # t_array (which must be an array, is an array of desired times)
@@ -121,6 +129,7 @@ class LocateR0hc2(OrbitModel2):
         self.r0_hc, self.t0_model, self.psi_deg, self.graze_point = self.find_r0hc()
         self.lat_gp, self.lon_gp, alt_gp = tools.eci2geodetic_pymap_vector(
             self.graze_point, self.t0_model, self.year0)
+        self.v0_model = self.v(self.t0_model)
         print(f"TransmitModel2: alt_gp2 = {alt_gp} km")
 
     # This function calculates the altitude of the telescopic line of sight at a time t (used in find_r0hc())
@@ -138,6 +147,12 @@ class LocateR0hc2(OrbitModel2):
         R_planet_list = np.linalg.norm(planet_points, axis=1)
 
         alt_tp = np.min(p_mag_list - R_planet_list)
+
+        # Code if we want to use geodetic altitudes instead of geocentric
+        # TODO: Note that this assumes the identification of the tangent point from the geocentric method. This may not be true for crossings far out-of-plane and can potentially cause errors
+        if self.use_geodetic is True:
+            tp_index = np.argmin(p_mag_list)
+            alt_tp = tools.eci2llh(los[tp_index, :])[2]
 
         return alt_tp, A_3d
 

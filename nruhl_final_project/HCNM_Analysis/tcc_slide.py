@@ -61,7 +61,7 @@ class CurveComparison:
         # First step to identify t0
         self.t0_1 = self.locate_t0_step1()
         self.t0_new = self.locate_t0_alternative()
-        self.t0_e, self.t0_guess_list, self.chisq_list = self.locate_t0_step2()
+        self.t0_e, self.t0_guess_list, self.chisq_list, self.num_comp = self.locate_t0_step2()
         self.dt_e = self.analyze_chisq()
 
     # This function is used to identify the model time (from t0)
@@ -134,8 +134,9 @@ class CurveComparison:
             chisq_list[indx] = chisq
 
         t0_e = t_start_list[np.argmin(chisq_list)]
+        num_comp = len(weight_range)    # Number of data points in the comparison
 
-        return t0_e, t_start_list, chisq_list
+        return t0_e, t_start_list, chisq_list, num_comp
 
     # Methods to calculate the chisq+1 error
     def analyze_chisq(self):

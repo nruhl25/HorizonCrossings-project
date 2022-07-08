@@ -1,5 +1,5 @@
 # Author: Nathaniel Ruhl
-# This is a made-up planet with the size of Earth, but slightly different atmospher
+# This is a made-up planet with the size of Earth, but a thinner atmosphere
 
 P2 = {
     # General Info
@@ -8,8 +8,8 @@ P2 = {
     "surface_gravity": 9.81,  # m/s^2, acceleration due to gravity at sea level
 
     # Density Profile
-    "surface_density": 0.001225,  # g/cm^3
-    "scale_height": 11,  # km, scale height for density exponential
+    "surface_density": 0.000001225,  # g/cm^3
+    "scale_height": 2,  # km, scale height for density exponential
 
     # Volumetric mix of the atmosphere
     "mix_N": 0.78,
