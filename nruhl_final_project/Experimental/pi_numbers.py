@@ -13,8 +13,9 @@ def main(SAT):
         transmit[i] = np.exp(-SAT.tau_gauss(t, 50))
 
     # Dimensionless parameters
-    h_star = SAT.tan_alt(time_array)/SAT.scale_height
-    lambda_star = SAT.rho0*SAT.sigma*SAT.tan_alt(time_array)
+    h = SAT.tan_alt(time_array)
+    h_star = h/SAT.scale_height
+    lambda_star = SAT.rho0*SAT.sigma*h
     Rstar = SAT.rho0*SAT.sigma*SAT.scale_height
     plt.figure(1)
     plt.plot(h_star, lambda_star, label=fr"{SAT.cb} satellite, $R^*=${Rstar}")
@@ -22,24 +23,21 @@ def main(SAT):
     plt.xlabel(r"$h^*$")
     plt.legend()
     plt.figure(2)
-    plt.plot(h_star, transmit, label=f"{SAT.cb} satellite")
+    plt.plot(h_star, transmit, label=f"L={SAT.scale_height} km")
     plt.ylabel("Transmittance")
     plt.xlabel("$h^*$")
     plt.legend()
     plt.figure(3)
-    plt.plot(lambda_star, transmit, label=f"{SAT.cb} satellite")
-    plt.legend()
-    plt.figure(4)
-    plt.plot(time_array, transmit, label=f"{SAT.cb} satellite")
-    plt.legend()
+    plt.plot(h, transmit, label=f"L={SAT.scale_height} km")
+    plt.ylabel("Transmittance")
+    plt.xlabel("h")
     return 0
 
 if __name__ == '__main__':
     ES = AnalyzeCrossing(cb="Earth", H=420)
-    MS = AnalyzeCrossing(cb="Mars", H=420)
-    P1S = AnalyzeCrossing(cb="P1", H=420)
-    # ES2 = AnalyzeCrossing(cb="Earth", H=500)
-    main(ES)
-    main(P1S)
+    scale_height_list = [6, 7, 8, 9, 10, 11, 12]
+    for height in scale_height_list:
+        ES.scale_height = height
+        main(ES)
     plt.show()
 

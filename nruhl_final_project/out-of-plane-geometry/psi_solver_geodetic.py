@@ -8,7 +8,7 @@ from psi_solver_ellipsoid import point_on_earth_azimuth_polar
 
 # Global variables
 hc_type = "rising"   # or "setting"
-h_unit = np.array([0, 0, 1])  # (aka we're already in the perifocal frame)
+h_unit = np.array([0, 0, 1])  # (aka we're already in the perifocal frame, this should not be changed in this script)
 
 M_planet = 5.972 * 10 ** 24  # kg, mass of Earth
 G = 6.6743*10**(-11)    # Nm^2/kg^2, Gravitational constant
@@ -34,9 +34,10 @@ def eci2llh(eci_vec):
 
     # 2) Start computational loop assuming phi_now = geocentric latitude
     phi_now = np.arctan2(z, p)
-    h = calc_h(phi_now, eci_vec)  # became nan... why?
+    h = calc_h(phi_now, eci_vec)
     h_last = 1000000.0  # initialize to enter for loop
-    tolerance = 1e-4   # [km] --> 10 cm
+    tolerance = 1e-5   # [km] --> 10 cm
+    # print(f"h_init = {h}")
     while abs(h - h_last) > tolerance:
         Rn = calc_Rn(phi_now)
         phi_next = np.arctan((z/p)*(1-(Rn/(Rn+h))*e**2)**(-1.))
@@ -45,6 +46,7 @@ def eci2llh(eci_vec):
         phi_now = phi_next
 
     lat = phi_now
+    # print(f"h={h} km, lat = {np.rad2deg(lat)} deg")
 
     return lat, lon, h
 
@@ -98,10 +100,22 @@ def r(t, R_orbit):
         z = 0.0
         return np.array([x, y, z])
 
+# Altitude of a point on the line of sight as a function of time (called from f())
+# if geodetic_toggle=False, then we will use the geocentric altitude above the ellipsoid
+def h(n, t, s_unit, R_orbit, geodetic_toggle=True):
+    eci_vec = r(t, R_orbit) + n*s_unit   # TODO: Be careful that this is in eci in the future when we have an arbitrary orbit, not perifocal
+    if geodetic_toggle is True:
+        h = eci2llh(eci_vec)[2]
+    else:
+        polar_angle = np.arccos(eci_vec[2]/np.linalg.norm(eci_vec))
+        h = np.linalg.norm(eci_vec - point_on_earth_azimuth_polar(0, polar_angle))
+    return h
+
+
 # Tangent point as a function of time. Within this function, we have to do another Newton's method to find the "n" index for which 
-def f(t, s_unit, R_orbit):
+def f(t, s_unit, R_orbit, geodetic_toggle):
     # distance of half los for in-plane crossing
-    A_2d = np.sqrt(R_orbit ** 2 - b_e ** 2)
+    A_2d = np.sqrt(R_orbit ** 2 - a_e ** 2)
     # km, max distance along LOS to look for grazing, a 3d los is always shorter than a 2d
 
     # Make an inital guess of the tangent point, using vectorization
@@ -113,29 +127,33 @@ def f(t, s_unit, R_orbit):
     p_mag_list = np.linalg.norm(los_array, axis=1)
     A_3d=0.1*np.argmin(p_mag_list)
 
-    # Initialize gradient descent and secant method
-    learn_rate = 0.001
-    n = A_3d   # initial guess for n
-    n_last = A_3d + 1
-    alt_tol = 1e-5  # km, 1cm error tolerance for tangent altitude
-    alt_tp = 1000.0
-    alt_tp_last = eci2llh(r(t, R_orbit) + n_last * s_unit)[2]
+    # Initialize Newton's method for optimization
+
+    # initialize b_last value before recursive loop
+    # km, step for numerical derivatives
+    dn = 1e-2
+    n = A_3d - 1
+    n_accuracy = 1e-6  # km = 1 mm along los
+    delta = 100.0
     num_iter = 0
-    while(abs(alt_tp - alt_tp_last) > alt_tol and num_iter < 20):
-        alt_tp = eci2llh(r(t, R_orbit) + n * s_unit)[2]
-        dh_dn = (alt_tp - alt_tp_last)/(n-n_last)  # Gradient
-        n_last = n.copy()
-        alt_tp_last = alt_tp.copy()
-        n -= learn_rate*dh_dn
-        alt_tp -= learn_rate*dh_dn**2
+    for _ in range(10):
+        if abs(delta) < n_accuracy:
+            break
+        b = h(n, t, s_unit, R_orbit, geodetic_toggle)
+        b_m = h(n-dn, t, s_unit, R_orbit, geodetic_toggle)   # b "minus"
+        b_p = h(n+dn, t, s_unit, R_orbit, geodetic_toggle)   # b "plus"
+        g = (b_p - b_m)/(2*dn)   # derivative
+        gg = (b_m - 2*b + b_p)/(dn**2)  # second derivative
+        delta = g/gg
+        n -= delta
         num_iter += 1
 
-    return alt_tp, num_iter, n
+    return b, num_iter, n
 
 # This function returns r0_hc for an arbitrary out-of-plane angle, psi (deg).
 
 
-def find_r0hc(s_unit, R_orbit):
+def find_r0hc(s_unit, R_orbit, geodetic_toggle):
     # Derived values
     psi_deg = np.rad2deg((np.pi/2)-np.arccos(np.dot(h_unit, s_unit)))
     T = np.sqrt(4*np.pi**2/(G*M_planet) * (R_orbit*10**3)**3)
@@ -149,7 +167,7 @@ def find_r0hc(s_unit, R_orbit):
     elif hc_type == "setting":
         g_unit_proj = np.cross(h_unit, s_proj)
 
-    A_2d = np.sqrt(R_orbit ** 2 - b_e ** 2)
+    A_2d = np.sqrt(R_orbit ** 2 - a_e ** 2)
     r0_2d = b_e * g_unit_proj - A_2d * s_proj
 
     # list of errors from r0_2d
@@ -159,25 +177,24 @@ def find_r0hc(s_unit, R_orbit):
 
     # Newton's method to minimize f(t)
     t = t1  # initial guess
-    t_last = t1 - 1  # initial guess for secant method
+    t_last = t1 - 1  # initial guess for secant method (forward in time for setting?)
 
     b_last = 2*R_orbit  # initialization to enter for loop
-    delta = 1.0  # sec time error, initialization to enter for loop
-    # 75 m, altitude tolerance for identifying the graze point (max difference between  geodetic and geocentric altitude)
-    graze_tolerance = 1e-3  # km
-    num_iter = 1
+    delta = 1.0  # sec time error
+    graze_tolerance = 1e-6  # km
+    num_iter = 0
+    # TODO : Make sure we're not doing more f() function evaluations than needed
     while(abs(b_last) > graze_tolerance and num_iter < 25):
-        b, num_iter_n, n = f(t, s_unit, R_orbit)
-        m = (f(t, s_unit, R_orbit)[0] - f(t_last, s_unit, R_orbit)[0])/(t-t_last)
+        b, num_iter_n, n = f(t, s_unit, R_orbit, geodetic_toggle)
+        m = (f(t, s_unit, R_orbit, geodetic_toggle)[0] - f(t_last, s_unit, R_orbit, geodetic_toggle)[0])/(t-t_last)
         if b is np.nan or m is np.nan:
             # No solution found (r0_hc will have a 'nan' in it)
             break
-        print(f"num_iter = {num_iter_n} to get n = {n} km, alt_tp = {b} km")
-        delta = b/m
-        t -= delta
+        print(f"t_guess = {t}, tangent point at n = {n} km, alt_tp = {b} km")
         b_last = b
         t_last = t
-        print(f"--- FINISHED {num_iter} ITERATION IN TIME ---")
+        delta = b/m
+        t -= delta
         num_iter += 1
 
     # If we broke out of the loop, r0_hc will include a 'nan'
@@ -187,7 +204,7 @@ def find_r0hc(s_unit, R_orbit):
         r0_hc = r(t, R_orbit)
     print(f"psi = {psi_deg} deg")
     print(f"t0_model = {t} sec")
-    print(f"{num_iter} iterations over time")
+    print(f"{num_iter} iterations over time required")
     # print(f"r0_2d = {r0_2d}")
     # print(f"r0_model1 = {r(t1, R_orbit)}")
     # print(f"r0_hc = {r0_hc}")
@@ -198,7 +215,7 @@ def find_r0hc(s_unit, R_orbit):
 #  about the x-axis by psi_deg and returns r0_hc
 
 
-def rotate_and_find_r0hc(psi_deg, R_orbit, s1=np.array([0, 1, 0])):
+def rotate_and_find_r0hc(psi_deg, R_orbit, geodetic_toggle, s1=np.array([0, 1, 0])):
     # Rotate the source position
     psi = np.deg2rad(psi_deg)   # radians
     R_x = np.array([[1, 0, 0],
@@ -207,23 +224,27 @@ def rotate_and_find_r0hc(psi_deg, R_orbit, s1=np.array([0, 1, 0])):
 
     s_unit = np.dot(R_x, s1)
 
-    r0_hc, num_iter = find_r0hc(s_unit, R_orbit)
+    r0_hc, num_iter = find_r0hc(s_unit, R_orbit, geodetic_toggle)
     return r0_hc, s_unit, num_iter
 
 # This function calculates and plots r0_hc for a single orbit for psi
 # Input: H is the orbital alitude above R_planet (km)
 # Input: d_psi is the step size (deg) in out-of-plane angle
 
-def main(R_orbit, psi):
+def main(R_orbit, psi, geodetic_toggle):
     # find r0 for psi
-    r0_hc, s_unit, num_iter = rotate_and_find_r0hc(psi, R_orbit)
+    r0_hc, s_unit, num_iter = rotate_and_find_r0hc(psi, R_orbit, geodetic_toggle)
     print(f"r0_hc = {r0_hc}")
     return 0
 
 
 if __name__ == '__main__':
     # Consider an equatorial Earth orbit at H=420 km:
-    main(R_orbit=a_e+420, psi=5)
+
+    import time
+    start_time = time.time()
+    main(R_orbit=a_e+420, psi=45, geodetic_toggle=False)  # TODO: Why does the geocentric elipsoidal height break? Maybe it is sensitive to a bade guess in time? f() returns a 'nan' value for the tangent point altitude
+    print(f"-----{start_time-time.time()} seconds")
 
     # r0_km = np.array([-4512.40+200, 3844.34-200, -3326.14+200])
 
