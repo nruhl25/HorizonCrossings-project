@@ -21,11 +21,11 @@ sys.path.append(
 from AnalyzeCrossing import AnalyzeCrossing
 
 # Global parameters to be used in the analysis
-cb_str = "Earth"  # P2: size of Earth, but a thinner atmosphere
+cb_str = "Venus"  # P2: size of Earth, but a thinner atmosphere
 hc_type = "rising"
-N0 = 10  # average number of unattenuated counts in data
+N0 = 5000  # average number of unattenuated counts in data
 E_kev = 1.5
-H = 400  # km, orbital altitude
+H = 500  # km, orbital altitude
 bin_size = 1.0
 # range of transmittance in which to compare the curves
 comp_range = [0.01, 0.99]

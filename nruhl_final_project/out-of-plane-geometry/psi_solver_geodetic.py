@@ -102,7 +102,7 @@ def r(t, R_orbit):
 
 # Altitude of a point on the line of sight as a function of time (called from f())
 # if geodetic_toggle=False, then we will use the geocentric altitude above the ellipsoid
-def h(n, t, s_unit, R_orbit, geodetic_toggle=True):
+def f(n, t, s_unit, R_orbit, geodetic_toggle=True):
     eci_vec = r(t, R_orbit) + n*s_unit   # TODO: Be careful that this is in eci in the future when we have an arbitrary orbit, not perifocal
     if geodetic_toggle is True:
         h = eci2llh(eci_vec)[2]
@@ -113,7 +113,7 @@ def h(n, t, s_unit, R_orbit, geodetic_toggle=True):
 
 
 # Tangent point as a function of time. Within this function, we have to do another Newton's method to find the "n" index for which 
-def f(t, s_unit, R_orbit, geodetic_toggle):
+def h(t, s_unit, R_orbit, geodetic_toggle):
     # distance of half los for in-plane crossing
     A_2d = np.sqrt(R_orbit ** 2 - a_e ** 2)
     # km, max distance along LOS to look for grazing, a 3d los is always shorter than a 2d
@@ -136,17 +136,16 @@ def f(t, s_unit, R_orbit, geodetic_toggle):
     n_accuracy = 1e-6  # km = 1 mm along los
     delta = 100.0
     num_iter = 0
-    for _ in range(10):
-        if abs(delta) < n_accuracy:
-            break
-        b = h(n, t, s_unit, R_orbit, geodetic_toggle)
-        b_m = h(n-dn, t, s_unit, R_orbit, geodetic_toggle)   # b "minus"
-        b_p = h(n+dn, t, s_unit, R_orbit, geodetic_toggle)   # b "plus"
+    while abs(delta) > n_accuracy and num_iter < 10:
+        b = f(n, t, s_unit, R_orbit, geodetic_toggle)
+        b_m = f(n-dn, t, s_unit, R_orbit, geodetic_toggle)   # b "minus"
+        b_p = f(n+dn, t, s_unit, R_orbit, geodetic_toggle)   # b "plus"
         g = (b_p - b_m)/(2*dn)   # derivative
         gg = (b_m - 2*b + b_p)/(dn**2)  # second derivative
         delta = g/gg
         n -= delta
         num_iter += 1
+    b = f(n, t, s_unit, R_orbit, geodetic_toggle)   # km, must re-define based on updated n
 
     return b, num_iter, n
 
@@ -179,14 +178,15 @@ def find_r0hc(s_unit, R_orbit, geodetic_toggle):
     t = t1  # initial guess
     t_last = t1 - 1  # initial guess for secant method (forward in time for setting?)
 
-    b_last = 2*R_orbit  # initialization to enter for loop
+    # initialization to enter for loop
+    b = h(t, s_unit, R_orbit, geodetic_toggle)[0]
+    b_last = h(t_last, s_unit, R_orbit, geodetic_toggle)[0]
     delta = 1.0  # sec time error
-    graze_tolerance = 1e-6  # km
+    t_tolerance = 1e-5  # sec  # corresponds to about 1e-8 km graze tolerance
     num_iter = 0
-    # TODO : Make sure we're not doing more f() function evaluations than needed
-    while(abs(b_last) > graze_tolerance and num_iter < 25):
-        b, num_iter_n, n = f(t, s_unit, R_orbit, geodetic_toggle)
-        m = (f(t, s_unit, R_orbit, geodetic_toggle)[0] - f(t_last, s_unit, R_orbit, geodetic_toggle)[0])/(t-t_last)
+    while abs(delta) > t_tolerance and num_iter < 25:
+        b, num_iter_n, n = h(t, s_unit, R_orbit, geodetic_toggle)
+        m = (b - b_last)/(t-t_last)
         if b is np.nan or m is np.nan:
             # No solution found (r0_hc will have a 'nan' in it)
             break
@@ -202,6 +202,8 @@ def find_r0hc(s_unit, R_orbit, geodetic_toggle):
         r0_hc = np.array([np.nan, np.nan, np.nan])
     else:
         r0_hc = r(t, R_orbit)
+        # Note that graze_alt = h(t, s_unit, R_orbit, geodetic_toggle)[0] should be re-evaluated
+
     print(f"psi = {psi_deg} deg")
     print(f"t0_model = {t} sec")
     print(f"{num_iter} iterations over time required")
@@ -243,7 +245,9 @@ if __name__ == '__main__':
 
     import time
     start_time = time.time()
-    main(R_orbit=a_e+420, psi=45, geodetic_toggle=False)  # TODO: Why does the geocentric elipsoidal height break? Maybe it is sensitive to a bade guess in time? f() returns a 'nan' value for the tangent point altitude
+    for val in np.arange(0, 70, 5):
+        main(R_orbit=a_e+420, psi=val, geodetic_toggle=True)
+    # geodetic_toggle=False does not work
     print(f"-----{start_time-time.time()} seconds")
 
     # r0_km = np.array([-4512.40+200, 3844.34-200, -3326.14+200])
