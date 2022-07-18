@@ -47,12 +47,12 @@ def main():
         # 3) Calculate the model transmittance curve
         TransmitModel2.set_pymsis_version(00)  # Must be 2000 to match with Breck 2020 results
         model2_obj = TransmitModel2(r02_obj, eband_derived_inputs)
-        transmit_model2 = model2_obj.transmit_model
+        transmit_model = model2_obj.transmit_model
         # Note that this is [0, time_final], not MET
-        time_crossing_model2 = model2_obj.time_crossing_model
+        time_crossing_model = model2_obj.time_crossing_model
 
         # 4) Curve comparison: calculate t0_e
-        model_and_data_tuple = (time_crossing_model2, transmit_model2, time_data, rate_data, unattenuated_rate)
+        model_and_data_tuple = (time_crossing_model, transmit_model, time_data, rate_data, unattenuated_rate)
 
         CurveComparison.set_comp_range([0.01, 0.99])
         comp_obj = CurveComparison(obs_dict, model_and_data_tuple)

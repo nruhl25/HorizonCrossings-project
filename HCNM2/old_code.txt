@@ -1,4 +1,9 @@
-This is the method for reading in the orbit file, LocateR0hc and TransmitModel before I introduced the new algorithm LocateR0hc2:
+This is the method for reading in the orbit file, LocateR0hc and TransmitModel before I introduced the new algorithm LocateR0hc2 and TransmitModel2:
+
+# Modules that have been replace with LocateR0hc2 algorithm
+# from Modules.OrbitModel import OrbitModel  # not used anymore
+# from Modules.LocateR0hc import LocateR0hc  # not used anymore
+# from Modules.TransmitModel import TransmitModel  # not used anymore
 
 r_array, v_array, t_array = OrbitModel.define_orbit_model(obs_dict, "mkf", time_step=0.01)
 

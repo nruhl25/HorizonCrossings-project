@@ -7,6 +7,7 @@ from astropy.table import Table
 
 import Modules.constants as constants
 import Modules.tools as tools
+import Modules.ell_tools as ell_tools  # "ellipsoid" tools
 
 # INPUTS: obs_dict (dict), orbit_model = "mkf", "rossi", or "aster".
 # (should make another class if we want to do it for the keplerian orbit)
@@ -132,27 +133,44 @@ class LocateR0hc2(OrbitModel2):
         self.v0_model = self.v(self.t0_model)
         print(f"TransmitModel2: alt_gp2 = {alt_gp} km")
 
-    # This function calculates the altitude of the telescopic line of sight at a time t (used in find_r0hc())
-    def f(self, t):
-        # define the los
-        los = self.r(t) + self.n_column_vec * self.starArray
+    # This function returns the altitude of any point along the LOS with index n
+    def f(self, t, n):
+        # TODO: Be careful that this is in eci in the future when we have an arbitrary orbit, not perifocal
+        eci_vec = self.r(t) + n*self.s_unit
+        alt_n = ell_tools.eci2llh(eci_vec)[2]
+        return alt_n
+
+    # This function calculates the tangent altitude of the telescopic line of sight at a time t (used in find_r0hc()). It minimizes f(t, n) over n to define h(t).
+    def h(self, t):
+        # 1) Make an inital guess of the tangent point A_3d, using vectorization
+        # distance of half los for in-plane crossing
+        A_2d = np.sqrt(self.R_orbit ** 2 - constants.a ** 2)
+        # km, max distance along LOS to look for grazing, a 3d los is always shorter than a 2d
+        n_list = np.arange(0, 1.1*A_2d, 0.1)
+        n_column_vec = n_list.reshape((len(n_list), 1))
+        starArray = np.ones((len(n_list), 3)) * self.s_unit
+        los_array = self.r(t) + n_column_vec * starArray
         # List of magnitudes of poins along the LOS
-        p_mag_list = np.linalg.norm(los, axis=1)
-        A_3d=0.1*np.argmin(p_mag_list) # A_3d should in theory always be smaller than A_2d
+        p_mag_list = np.linalg.norm(los_array, axis=1)
+        A_3d = 0.1*np.argmin(p_mag_list)
 
-        # Solve for the polar angles corresponding to points on the LOS
-        polar_angles = np.arccos(los[:, 2] / p_mag_list)
-        planet_points = tools.point_on_earth_azimuth_polar(
-            np.zeros_like(polar_angles), polar_angles)
-        R_planet_list = np.linalg.norm(planet_points, axis=1)
-
-        alt_tp = np.min(p_mag_list - R_planet_list)
-
-        # Code if we want to use geodetic altitudes instead of geocentric
-        # TODO: Note that this assumes the identification of the tangent point from the geocentric method. This may not be true for crossings far out-of-plane and can potentially cause errors
-        if self.use_geodetic is True:
-            tp_index = np.argmin(p_mag_list)
-            alt_tp = tools.eci2llh(los[tp_index, :])[2]
+        # Initialize Newton's method for optimization
+        dn = 1e-2  # km, step for numerical derivatives
+        n = A_3d - 1
+        n_accuracy = 1e-6  # km = 1 mm along los
+        delta = 100.0
+        num_iter = 0
+        while abs(delta) > n_accuracy and num_iter < 10:
+            b = self.f(t, n)
+            b_m = self.f(t, n-dn)   # b "minus"
+            b_p = self.f(t, n+dn)   # b "plus"
+            g = (b_p - b_m)/(2*dn)   # derivative
+            gg = (b_m - 2*b + b_p)/(dn**2)  # second derivative
+            delta = g/gg
+            n -= delta
+            num_iter += 1
+        # km, must re-define based on updated n
+        alt_tp = self.f(t, n)
 
         return alt_tp, A_3d
 
@@ -182,23 +200,23 @@ class LocateR0hc2(OrbitModel2):
         t1 = t_orbit[t1_index]  # t_0,guess
 
         ### Newton's method to minimize f(t) ###
+        # initialization to enter for loop
         t = t1  # initial guess
         t_last = t1 - 1  # initial guess for secant method
-
-        b_last = 2*self.R_orbit  # initialization to enter for loop
-        delta = 1.0  # sec time error, initialization to enter for loop
-        # 75 m, altitude tolerance for identifying the graze point (max difference between  geodetic and geocentric altitude)
-        graze_tolerance = 1e-3  # 1 m
+        b_last = self.h(t_last)[0]   # must be initialized before for loop
+        delta = 1.0  # sec time error
+        t_tolerance = 1e-5  # sec  # corresponds to about 1e-8 km graze tolerance
+        num_iter = 0
         num_iter = 1
-        while(abs(b_last) > graze_tolerance and num_iter < 25):
-            b = self.f(t)[0]
-            m = (self.f(t)[0] - self.f(t_last)[0])/(t-t_last)
+        while abs(delta) > t_tolerance and num_iter < 15:
+            b = self.h(t)[0]
+            m = (b - b_last)/(t-t_last)
             if b is np.nan or m is np.nan:
                 # No solution found (r0_hc will have a 'nan' in it)
                 break
-            delta = b/m
             b_last = b
             t_last = t
+            delta = b/m
             t -= delta
             num_iter += 1
 
@@ -208,6 +226,6 @@ class LocateR0hc2(OrbitModel2):
         else:
             r0_hc = self.r(t)
             # Identify the graze point vector
-            A_3d = self.f(t)[1]
+            A_3d = self.h(t)[1]
             graze_point = self.r(t) + A_3d*self.s_unit
         return r0_hc, t, psi_deg, graze_point
