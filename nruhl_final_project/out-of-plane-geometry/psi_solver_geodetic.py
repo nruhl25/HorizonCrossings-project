@@ -184,7 +184,7 @@ def find_r0hc(s_unit, R_orbit, geodetic_toggle):
     delta = 1.0  # sec time error
     t_tolerance = 1e-5  # sec  # corresponds to about 1e-8 km graze tolerance
     num_iter = 0
-    while abs(delta) > t_tolerance and num_iter < 25:
+    while abs(delta) > t_tolerance and num_iter < 15:
         b, num_iter_n, n = h(t, s_unit, R_orbit, geodetic_toggle)
         m = (b - b_last)/(t-t_last)
         if b is np.nan or m is np.nan:
@@ -246,7 +246,7 @@ if __name__ == '__main__':
     import time
     start_time = time.time()
     for val in np.arange(0, 70, 5):
-        main(R_orbit=a_e+420, psi=val, geodetic_toggle=True)
+        main(R_orbit=a_e+1000, psi=val, geodetic_toggle=True)
     # geodetic_toggle=False does not work
     print(f"-----{start_time-time.time()} seconds")
 
