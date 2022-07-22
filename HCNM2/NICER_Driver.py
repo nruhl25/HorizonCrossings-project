@@ -24,6 +24,7 @@ def main():
     obs_dict = crabNICER
     bin_size = 1.0   # sec
     e_band_array = np.array([[1.0, 2.0], [2.0, 3.0], [3.0, 4.0], [4.0, 5.0]])
+    e_band_array = np.array([[1.0, 2.0]])
 
     # 1) LocateR0hc2
 
@@ -48,6 +49,7 @@ def main():
         TransmitModel2.set_pymsis_version(00)  # Must be 2000 to match with Breck 2020 results
         model2_obj = TransmitModel2(r02_obj, eband_derived_inputs)
         transmit_model = model2_obj.transmit_model
+        h_list = model2_obj.h_list    # tangent point altitudes (km)
         # Note that this is [0, time_final], not MET
         time_crossing_model = model2_obj.time_crossing_model
 
@@ -57,7 +59,10 @@ def main():
         CurveComparison.set_comp_range([0.01, 0.99])
         comp_obj = CurveComparison(obs_dict, model_and_data_tuple)
         t0_e, dt_e = comp_obj.t0_e, comp_obj.dt_e
-        del comp_obj
+        # del comp_obj
+
+        np.save("/Users/nathanielruhl/Documents/HorizonCrossings-Summer22/nruhl_final_project/DensityMeasurement/timeTransmit.npy", np.column_stack((time_data, comp_obj.transmit_data)))
+        np.save("/Users/nathanielruhl/Documents/HorizonCrossings-Summer22/nruhl_final_project/DensityMeasurement/timeAlt.npy", np.column_stack((time_crossing_model+r02_obj.t0_model, h_list)))
 
         t0_e_list.append(t0_e)
         dt_e_list.append(dt_e)

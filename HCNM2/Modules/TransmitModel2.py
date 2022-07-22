@@ -67,7 +67,7 @@ class TransmitModel2:
         
         # time_model is [0:time_final], wheras time_model_met is in seconds of MET
         self.time_crossing_model = self.time_crossing_model_met - self.time_crossing_model_met[0]
-        self.transmit_model = self.calculate_transmit_model()
+        self.transmit_model, self.h_list = self.calculate_transmit_model()   # Model transmit and tangent altitudes
 
     def calculate_transmit_model(self):
         # determine densities along the LOS at all times during the crossing
@@ -75,7 +75,7 @@ class TransmitModel2:
         # Same size LOS at every time initially
         s_list_km = np.arange(
             0, self.s_dist_max_km, TransmitModel2.ds_km)
-        density_array, density_tp_list = self.calculate_density_arrays(
+        density_array, density_tp_list, h_list = self.calculate_density_arrays(
             s_list_km)
 
         # effective transmittance model
@@ -98,7 +98,7 @@ class TransmitModel2:
         # This may occur for setting crossing
         effective_transmit = np.nan_to_num(effective_transmit, posinf=np.nan)
 
-        return effective_transmit
+        return effective_transmit, h_list
 
     # Function to map out all LOS during the crossing and create an array of densities.
     # OUTPUTS (2): matrix of densities along entire LOS and list of densities at the tangent point
@@ -112,6 +112,7 @@ class TransmitModel2:
             (len(self.time_crossing_model_met), len(s_list_km)))
 
         density_tp_list = np.zeros(len(self.time_crossing_model_met))
+        h_list = []   # List containing the tangent point altitudes
 
         for t_index, t in enumerate(self.time_crossing_model_met):
             los_points_km = self.line_of_sight(t, s_list_km)
@@ -128,7 +129,7 @@ class TransmitModel2:
 
             # Only consider half of the LOS
             tangent_point_index = np.argmin(altitude_list)
-            # print(f"tangent altitude = {altitude_list[tangent_point_index]}")  # TANGENT ALTITUDE
+            h_list.append(altitude_list[tangent_point_index])  # TANGENT ALTITUDE
             los_densities = MSIS.get_pymsis_density(datetime=mid_datetime_crossing,
                                                     lon=self.lon_gp,
                                                     lat=self.lat_gp,
@@ -142,7 +143,7 @@ class TransmitModel2:
             los_densities[tangent_point_index:] = 0.0
             density_array[t_index, :] = los_densities
 
-        return density_array, density_tp_list
+        return density_array, density_tp_list, np.array(h_list)
 
     # n km steps along the line of sight
     # t = element of self.time_crossing_model_met

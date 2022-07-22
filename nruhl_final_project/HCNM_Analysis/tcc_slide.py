@@ -192,6 +192,7 @@ if __name__ == '__main__':
 
     sat = AnalyzeCrossing(cb_str, H, E_kev)
     comp_obj = CurveComparison(sat, hc_type, N0=N0)
+    np.save("t0-chisq-array.npy", np.column_stack((comp_obj.t0_guess_list, comp_obj.chisq_list)))
 
     print(f"First guess t0_1 = {comp_obj.t0_1:.2f} sec, t0_new = {comp_obj.t0_new:.2f} sec")
     print(f"Best fit t0_e = {comp_obj.t0_e:.2f} +/- {comp_obj.dt_e:.2f} sec")
