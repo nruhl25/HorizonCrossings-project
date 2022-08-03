@@ -6,6 +6,7 @@ import numpy as np
 from pathlib import Path
 cwd = str(Path(__file__).parents[2])  # HCNM2/ is cwd
 
+# This observation had lock-on troubles
 dict_50099 = {   # BASIC OBSERVATION INFO
             "detector": "RXTE",
             "obsID": 50099,

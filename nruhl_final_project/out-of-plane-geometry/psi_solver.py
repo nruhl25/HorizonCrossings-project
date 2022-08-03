@@ -56,9 +56,9 @@ def f(t, s_unit, R_orbit):
     starArray = np.ones((len(n_list), 3)) * s_unit
     los = r(t, R_orbit) + n_column_vec * starArray
     p_mag = np.linalg.norm(los, axis=1)
-    # A_3d=0.1*np.argmin(p_mag) A_3d should in theory always be smaller than A_2d
+    A_3d=0.1*np.argmin(p_mag) # A_3d should in theory always be smaller than A_2d
     alt_tp = np.min(p_mag) - R_planet # Altitude of tangent point, km (spherical planet)
-    return alt_tp
+    return alt_tp, A_2d, A_3d
 
 # This function returns r0_hc for an arbitrary out-of-plane angle, psi (deg).
 def find_r0hc(s_unit, R_orbit):
@@ -91,8 +91,8 @@ def find_r0hc(s_unit, R_orbit):
     graze_tolerance = 1e-3 # 75 m, altitude tolerance for identifying the graze point (max difference between  geodetic and geocentric altitude)
     num_iter = 1
     while(abs(b_last) > graze_tolerance and num_iter < 25):  # num_iter < 50
-        b = f(t, s_unit, R_orbit)
-        m = (f(t, s_unit, R_orbit) - f(t_last, s_unit, R_orbit))/(t-t_last)
+        b = f(t, s_unit, R_orbit)[0]
+        m = (f(t, s_unit, R_orbit)[0] - f(t_last, s_unit, R_orbit)[0])/(t-t_last)
         if b is np.nan or m is np.nan:  
             ## or abs(b_last) < abs(b) removed this condition since < 700 km it's not monotonically decreasing
             # No solution found (r0_hc will have a 'nan' in it)
@@ -102,7 +102,8 @@ def find_r0hc(s_unit, R_orbit):
         t_last = t
         t -= delta
         num_iter += 1
-
+    alt_tp, A_2d, A_3d = f(t, s_unit, R_orbit)
+    print(alt_tp)
     # If we broke out of the loop, r0_hc will include a 'nan'
     if b is np.nan or m is np.nan or num_iter >= 25:
         r0_hc = np.array([np.nan, np.nan, np.nan])
@@ -114,7 +115,7 @@ def find_r0hc(s_unit, R_orbit):
     # print(f"r0_model1 = {r(t1, R_orbit)}")
     # print(f"r0_hc = {r0_hc}")
     # print("-------------------")
-    return r0_hc, b_last, num_iter
+    return r0_hc, b_last, num_iter, A_3d
 
 # This function rotates the in-plane source s1 = np.array([0, 1, 0]) (perifocal fram)
 #  about the x-axis by psi_deg and returns r0_hc
@@ -127,8 +128,8 @@ def rotate_and_find_r0hc(psi_deg, R_orbit, s1=np.array([0, 1, 0])):
 
     s_unit = np.dot(R_x, s1)
 
-    r0_hc, b_last, num_iter = find_r0hc(s_unit, R_orbit)
-    return r0_hc, b_last, num_iter
+    r0_hc, b_last, num_iter, A_3d = find_r0hc(s_unit, R_orbit)
+    return r0_hc, b_last, num_iter, A_3d
 
 # This function calculates and plots r0_hc for a single orbit up to psi_break
 # Input: H is the orbital alitude above R_planet (km)
@@ -143,12 +144,12 @@ def main(H, d_psi):
     plt.title(f"{hc_type} horizon crossing at H = {H} km above Earth")
     plt.scatter(orbit_vec[:, 0], orbit_vec[:, 1], s=1)
     plt.figure(2)
-    plt.title("Error in tangent altitudde (km) vs out-of-plane angle")
+    plt.title("Error in tangent altitude (km) vs out-of-plane angle")
 
     # find the r0 value for psi_list
     psi_list = np.arange(0, 80, d_psi)  # max seems to be 69 for the ISS orbit
     for psi in psi_list:
-        r0_hc, gp_error, num_iter = rotate_and_find_r0hc(psi, R_orbit)
+        r0_hc, gp_error, num_iter, A_3d = rotate_and_find_r0hc(psi, R_orbit)
         if np.isnan(r0_hc).any():
             psi_break = psi
             print(f"H={H}km")
@@ -170,10 +171,45 @@ def main(H, d_psi):
     plt.show()
     return 0
 
+# This function considers the length of the line of sight as a function of the out-of-plane angle
+def los_distance(H):
+    R_orbit = R_planet + H
+    # Plot the initial orbit
+    T = np.sqrt(4*np.pi**2/(G*M_planet) * (R_orbit*10**3)**3)
+    t_orbit = np.arange(0, T, 1)   # must be defined to create orbit_vec
+    orbit_vec = r(t_orbit, R_orbit)
+    A_2d = np.sqrt(R_orbit ** 2 - R_planet ** 2)
+    print(f"A_2d = {A_2d}")
+    A3d_list = []   # corresponds to the out-of-plane angle
+    plt.figure(1)
+    plt.title(f"{hc_type} horizon crossing at H = {H} km above Earth")
+    plt.scatter(orbit_vec[:, 0], orbit_vec[:, 1], s=1)
+
+    # find the r0 value for psi_list
+    psi_list = np.arange(0, 65, 5)  # max seems to be 69 for the ISS orbit
+    for psi in psi_list:
+        r0_hc, gp_error, num_iter, A_3d = rotate_and_find_r0hc(psi, R_orbit)
+        A3d_list.append(A_3d)
+        if np.isnan(r0_hc).any():
+            psi_break = psi
+            print(f'psi_break = {psi_break} deg with {num_iter} iterations')
+            break
+        else:
+            plt.figure(1)
+            plt.scatter(r0_hc[0], r0_hc[1], label=fr"$\psi = ${psi}$^\circ$")
+            continue
+
+    plt.figure(3)
+    plt.plot(psi_list, A3d_list, ".")
+    plt.ylabel("Distance to grazing point (km)")
+    plt.xlabel("Out-of-plane angle")
+    plt.show()
+    return 0
+
 if __name__ == '__main__':
     # Consider a single Earth orbit at H=420 km:
-    main(H=420, d_psi=5)
-
+    # main(H=420, d_psi=5)
+    los_distance(H=420)
 
     # Code to verify Seamus's out-of-plane angle formula:
     # First, find s_unit corresponding to theta_max (coordinate conversion)

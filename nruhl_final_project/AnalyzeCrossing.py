@@ -2,6 +2,8 @@
 # This class assembles all the "tools" methods to analyze a horizon crossing
 
 import numpy as np
+from scipy.interpolate import interp1d
+from scipy.optimize import root_scalar
 
 # import local libraries
 from Orbit import Orbit
@@ -212,6 +214,31 @@ class AnalyzeCrossing(Orbit):
         exp_int *= 10**5   # convert to cm
         return exp_int
 
+    # Derived values of time and tangent altitude at 50% transmittance point
+    def h50_t50(self, time_array, Delta_omega=0):
+        omega = self.omega+Delta_omega
+        T_array = self.calc_transmit_curve(time_array)
+        h_array = self.tan_alt(time_array)
+        T_vs_h = interp1d(x=h_array, y=T_array, kind='cubic')
+
+        # Newton's method
+        hlast = 41.0
+        h=40
+        delta = 1.0
+        num_iter=0
+        while delta > 1e-9 and num_iter < 10:
+            b = T_vs_h(h)
+            m = (b - T_vs_h(hlast))/(h-hlast)
+            delta = b/m
+            hlast = h
+            h -= delta
+            num_iter += 1
+
+        h50 = h
+        t50 = (1/omega)*(np.arcsin((self.R+h50)/self.R_orbit)-self.theta)
+        return h50, t50
+
+
 # Code to test the class
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
@@ -260,5 +287,5 @@ if __name__ == "__main__":
     plt.xlabel("$t$")
     plt.ylabel("Transmission")
     plt.legend()
-
+    
     plt.show()

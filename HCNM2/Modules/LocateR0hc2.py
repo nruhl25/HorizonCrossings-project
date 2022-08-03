@@ -15,10 +15,9 @@ import Modules.ell_tools as ell_tools  # "ellipsoid" tools
 # Creates an interpolating function r(t) that is used in the algorithm to Locate r0_hc
 
 class OrbitModel2:
-    def __init__(self, obs_dict, orbit_model, use_geodetic=False):
+    def __init__(self, obs_dict, orbit_model):
         self.obs_dict = obs_dict
         self.orbit_model = orbit_model
-        self.use_geodetic = use_geodetic  # default is to use geodetic to save run time
         self.r_array, self.v_array, self. t_array = self.read_orbit_model()
         self.R_orbit, self.h_unit = self.define_R_orbit_h_unit()
 
@@ -116,7 +115,6 @@ class LocateR0hc2(OrbitModel2):
     def __init__(self, obs_dict, orbit_model):
         OrbitModel2.__init__(self, obs_dict, orbit_model)
         self.s_unit = self.obs_dict["starECI"]
-
         # Other variables unique to the LocateR0_hc algorithm:
         # distance of half los for in-plane crossing, max distance along LOS to look for grazing since a 3d los to grazing is always shorter than a 2d
         self.A_2d = np.sqrt(self.R_orbit ** 2 - constants.b ** 2)

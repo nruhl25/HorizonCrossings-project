@@ -3,7 +3,6 @@
 # Driver for HCNM process for a NICER observation
 
 # import local modules for HCNM Analysis
-from Modules.OrbitModel import OrbitModel
 from Modules.LocateR0hc2 import LocateR0hc2
 from Modules.ReadEVT import ReadEVT
 from Modules.NormalizeSpectrumNICER import NormalizeSpectrumNICER
@@ -59,7 +58,7 @@ def main():
         CurveComparison.set_comp_range([0.01, 0.99])
         comp_obj = CurveComparison(obs_dict, model_and_data_tuple)
         t0_e, dt_e = comp_obj.t0_e, comp_obj.dt_e
-        # del comp_obj
+        #  del comp_obj
 
         np.save("/Users/nathanielruhl/Documents/HorizonCrossings-Summer22/nruhl_final_project/DensityMeasurement/timeTransmit.npy", np.column_stack((time_data, comp_obj.transmit_data)))
         np.save("/Users/nathanielruhl/Documents/HorizonCrossings-Summer22/nruhl_final_project/DensityMeasurement/timeAlt.npy", np.column_stack((time_crossing_model+r02_obj.t0_model, h_list)))

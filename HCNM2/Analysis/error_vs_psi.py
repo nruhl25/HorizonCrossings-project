@@ -8,14 +8,13 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 # Import Local Modules
-from Modules.OrbitModel import OrbitModel
 from Modules.LocateR0hc2 import LocateR0hc2
 from Modules.TransmitModel2 import TransmitModel2
 from Modules.generate_nans_rxte import generate_nans_rxte
 from Preprocessing.RXTE_channel_to_keV import channel_to_keV_epoch5
 from Modules.CurveComparison import CurveComparison
 from Modules.get_unattenuated_rate_RXTE import get_unattenuated_rate_RXTE
-from Modules.calculate_psi import calculate_psi
+from Old_Code.calculate_psi import calculate_psi
 
 cwd = str(Path(__file__).parents[1])  # HCNM2/ is cwd
 

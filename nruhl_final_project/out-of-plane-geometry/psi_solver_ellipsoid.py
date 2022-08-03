@@ -76,8 +76,7 @@ def f(t, s_unit, R_orbit):
     starArray = np.ones((len(n_list), 3)) * s_unit
     los = r(t, R_orbit) + n_column_vec * starArray
     p_mag_list = np.linalg.norm(los, axis=1)  # List of magnitudes of poins along the LOS
-    # A_3d=0.1*np.argmin(p_mag) A_3d should in theory always be smaller than A_2d
-
+    # A_3d=0.1*np.argmin(p_mag_list) #A_3d should in theory always be smaller than A_2d
     # Solve for the polar angles corresponding to points on the LOS
     polar_angles = np.arccos(los[:, 2] / p_mag_list)
     planet_points = point_on_earth_azimuth_polar(
