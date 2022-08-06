@@ -1,12 +1,10 @@
 # Author: Nathaniel Ruhl
 # This script contains functions to "fit the atmosphere" to tanh() before doing navigation
 
-from Modules.LocateR0hc2 import OrbitModel2
-import Modules.constants as constants
+from Modules.OrbitModel2 import OrbitModel2
 
 import numpy as np
 from scipy.optimize import curve_fit
-
 
 class FitAtmosphere(OrbitModel2):
     def __init__(self, obs_dict, orbit_model, r0_obj, rate_data, time_data, unattenuated_rate):
@@ -28,13 +26,14 @@ class FitAtmosphere(OrbitModel2):
         self.h_measured, self.n_measured, self.rate_measured = self.calcTangentAltitudes(time_crossing=200)
         self.transmit_measured = self.rate_measured/self.unattenuated_rate  # used to define valid fit range
 
-        self.a_fit, self.b_fit, self.c_fit, self.d_fit = self.fit_rate_vs_alt()
+        self.a_fit, self.b_fit, self.c_fit, self.d_fit, self.h1, self.h2 = self.fit_transmit_vs_alt()
+        # h1 and h2 is the valid altitude range for the arctangent fit
+        # note that c_fit is a tangent altitude, not a radial distance to the tange point
 
     # This function calculates y(t) that corresponds to the binned data
     # time_crossing (int) is the total expected duration for which to calculate y(t)
     def calcTangentAltitudes(self, time_crossing):
         # times that corrspond to binned data
-        # TODO: Something seems to be wrong here
         if self.hc_type == "rising":
             start_index = np.where(self.time_data > self.t0_model)[0][0]
             t_measured = self.time_data[start_index] + np.arange(0.0, time_crossing, 1.0)
@@ -52,12 +51,12 @@ class FitAtmosphere(OrbitModel2):
         # km, distance along LOS to closest approach
         n_measured = np.zeros_like(t_measured)
         for i in range(len(h_measured)):
-            h_measured[i], n_measured[i] = self.y(t_measured[i])
+            h_measured[i], n_measured[i] = self.h(t_measured[i])
         
         return h_measured, n_measured, rate_measured
 
     # This function calculates the distance of the tangent point telescopic line of sight at a time t. It minimizes f(t, n) over n to define y(t).
-    def y(self, t):
+    def h(self, t):
         # Initialize Newton's method for optimization
         dn = 1e-2  # km, step for numerical derivatives
         n = self.A - 1
@@ -83,25 +82,24 @@ class FitAtmosphere(OrbitModel2):
         alt_n = np.linalg.norm(eci_vec) - self.y0_ref
         return alt_n
 
-    def fit_rate_vs_alt(self):
+    def fit_transmit_vs_alt(self):
         # Note that w1 can't be defined if h0_ref is too large
         if self.hc_type == "rising":
             w1 = np.where(self.transmit_measured >= 0.01)[0][0]  # can't go to zero
             w2 = np.where(self.transmit_measured >= 0.99)[0][0]+1
         elif self.hc_type == "setting":
-            print(self.transmit_measured)
             w1 = np.where(self.transmit_measured <= 0.99)[0][0]
-            # can't go to zero (0.03 because of obs 50099, not 0.01)
             w2 = np.where(self.transmit_measured <= 0.03)[0][-1]+1
+            # can't go to zero (0.03 because of obs 50099, not 0.01)
         transmit_measured = self.transmit_measured[w1:w2]
         # specify valid range for fit
         h_measured = self.h_measured[w1:w2]
-        popt, pcov = curve_fit(self.rate_vs_h, h_measured, transmit_measured, p0=[
-                               0.5*self.unattenuated_rate, 1/50, 100, 0.5*self.unattenuated_rate])
+        popt, pcov = curve_fit(self.transmit_vs_h, h_measured, transmit_measured, p0=[
+                               0.5, 1/50, 100, 0.5])
         a, b, c, d = popt
 
-        return a, b, c, d
+        return a, b, c, d, h_measured[0], h_measured[-1]
 
     # hyperbolic tangent fit
-    def rate_vs_h(self, h, a, b, c, d):
+    def transmit_vs_h(self, h, a, b, c, d):
         return a*np.tanh(b*(h-c))+d

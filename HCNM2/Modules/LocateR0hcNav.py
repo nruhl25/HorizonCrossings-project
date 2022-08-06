@@ -1,7 +1,7 @@
 # Author: Nathaniel Ruhl
 # This script proviveds an alternative version of LocateR0hc2.py, but is specific for the navigational problem and ignores the hard rock Earth.
 
-from Modules.LocateR0hc2 import OrbitModel2  # reads in orbital data 
+from Modules.OrbitModel2 import OrbitModel2  # reads in orbital data 
 import Modules.constants as constants
 import Modules.tools as tools
 
@@ -104,6 +104,6 @@ class LocateR0hcNav(OrbitModel2):
             r0_hc = self.r(t)
             alt_tp, n_graze = self.h(t)
             graze_point = self.r(t) + n_graze*self.s_unit
-            print(f"alt_tp={alt_tp} km")
-            print(f"n_graze={n_graze} km")
+            # print(f"alt_tp={alt_tp} km")
+            # print(f"n_graze={n_graze} km")
         return r0_hc, t, psi_deg, graze_point

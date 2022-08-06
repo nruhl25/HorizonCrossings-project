@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 
 ISS = AnalyzeCrossing("Earth", 420)
 
+print(f"{4.5/(ISS.R_orbit*ISS.omega*np.sin(ISS.theta+40*ISS.omega))}")
 t = np.arange(0, 300, 1.0)
 h = ISS.R_orbit*np.sin(ISS.theta+ISS.omega*t)-ISS.R
 h2 = ISS.R_orbit*np.sin(ISS.theta+(ISS.omega+(0.003*ISS.omega))*t)-ISS.R
@@ -27,20 +28,20 @@ plt.ylabel("Tangent Altitude, h (km)")
 plt.xlabel("Time (sec)")
 plt.legend()
 
-factor_list = np.linspace(0, 0.1, 100)
-Delta_omega_list = factor_list*ISS.omega
-Delta_t_linear_list = []
-Delta_t_list = []
-for Delta_omega in Delta_omega_list:
-    Delta_t_linear_list.append(Delta_t_linear(ISS, t, Delta_omega))
-    Delta_t_list.append(ISS.h50_t50(t, Delta_omega)[
-                        1]-ISS.h50_t50(t)[1])
-plt.figure(2)
-plt.plot(100*factor_list, Delta_t_list, label=r'$\Delta t_0$')
-plt.plot(100*factor_list, Delta_t_linear_list, label=r'Linearized $\Delta t_0$')
-plt.xlabel("Percent error in orbital velocity (H=420km)")
-plt.ylabel("Error in horizon crossing measurement (sec)")
-plt.legend()
+# factor_list = np.linspace(0, 0.1, 100)
+# Delta_omega_list = factor_list*ISS.omega
+# Delta_t_linear_list = []
+# Delta_t_list = []
+# for Delta_omega in Delta_omega_list:
+#     Delta_t_linear_list.append(Delta_t_linear(ISS, t, Delta_omega))
+#     Delta_t_list.append(ISS.h50_t50(t, Delta_omega)[
+#                         1]-ISS.h50_t50(t)[1])
+# plt.figure(2)
+# plt.plot(100*factor_list, Delta_t_list, label=r'$\Delta t_0$')
+# plt.plot(100*factor_list, Delta_t_linear_list, label=r'Linearized $\Delta t_0$')
+# plt.xlabel("Percent error in orbital velocity (H=420km)")
+# plt.ylabel("Error in horizon crossing measurement (sec)")
+# plt.legend()
 
 
 plt.figure(3)
