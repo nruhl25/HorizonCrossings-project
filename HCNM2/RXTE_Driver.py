@@ -8,7 +8,7 @@ from Modules.CurveComparison import CurveComparison
 
 # Libraries used for the Navigational Driver
 from Modules.LocateR0hcNav import LocateR0hcNav
-from Modules.FitAtmosphere import FitAtmosphere
+from Modules.FitAtmosphere import FitAtmosphere  # curve comparison class is not necessary with the fit
 
 # Aditional function to read and do some preliminary processing on RXTE data
 from Modules.read_rxte_data import read_rxte_data
@@ -53,28 +53,46 @@ def RXTE_MSIS_Driver(obs_dict, e_band_ch, plot_color='tab:blue'):
     plt.plot(t0_e + time_crossing_model -
              time_crossing_model[-1], unattenuated_rate*transmit_model, color=plot_color) # label = fr"$t_{{0,e}}$ = {t0_e:.2f} +/- {dt_e:.2f}"
     plt.legend()
+
+    print(f"t0_model={r02_obj.t0_model}")
+    print(f"t0_e={t0_e}")
+    print(f"r0={r02_obj.r0_hc}")
     return 0
 
 # h50_expected is filter estimate
-def RXTE_Nav_Driver(obs_dict, e_band_ch, h0_ref, orbit_model = "rossi", y50_expected = 6483):
+
+
+def RXTE_Nav_Driver(obs_dict, e_band_ch, h0_ref, orbit_model="rossi", y50_predicted = 6482.5988-2):
     r0_obj=LocateR0hcNav(obs_dict, orbit_model, h0_ref)
-    print(f"t0_model = {r0_obj.t0_model} sec")
 
     #2) Read in RXTE data for the specified energy band
     rate_data, time_data, normalized_amplitudes, bin_centers_kev, unattenuated_rate, e_band_kev=read_rxte_data(obs_dict, e_band_ch)
 
     #3) Fit count rate vs h (geocentric tangent altitudes above y0_ref)
-    fit_obj=FitAtmosphere(obs_dict, orbit_model, r0_obj, rate_data, time_data, unattenuated_rate)
+    fit_obj=FitAtmosphere(obs_dict, orbit_model, r0_obj, rate_data, time_data, unattenuated_rate, y50_predicted)
+
+    plt.plot(fit_obj.h_measured+fit_obj.y0_ref, fit_obj.rate_measured/fit_obj.unattenuated_rate, ".")
+    h_model = np.linspace(min(fit_obj.h_measured), max(fit_obj.h_measured), 1000)
+    plt.plot(h_model+fit_obj.y0_ref, fit_obj.transmit_vs_h(h_model,
+                                                           fit_obj.a_fit, fit_obj.b_fit, fit_obj.c_fit, fit_obj.d_fit))
+    plt.ylabel("Transmittance, $T$")
+    plt.xlabel("Tangent radius, $y$")
+    plt.show()
 
     print(f"y50_measured = {fit_obj.c_fit+fit_obj.y0_ref}")
+    print(f"t0_model={r0_obj.t0_model}")
+    print(f"dt={fit_obj.dt}")
+    print(f"r0={r0_obj.r0_hc}")
 
     return 0
 
 def main():
     # Choose observation
-    obs_dict = all_dicts[0]
+    obs_dict = all_dicts[1]
     e_band_ch = [7-1, 9]
-    RXTE_Nav_Driver(obs_dict, e_band_ch, h0_ref=25)
+    print(f"Navigation Driver: ")
+    RXTE_Nav_Driver(obs_dict, e_band_ch, h0_ref=40)
+
     # a1 = np.arange(6, 28, 3)
     # a2 = np.arange(9, 31, 3)
     # e_band_ch_array = np.column_stack((a1, a2))

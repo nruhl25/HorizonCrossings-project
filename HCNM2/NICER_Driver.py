@@ -45,7 +45,7 @@ def main():
         eband_derived_inputs = (e_band, bin_size, normalized_amplitudes, bin_centers)
 
         # 3) Calculate the model transmittance curve
-        TransmitModel2.set_pymsis_version(00)  # Must be 2000 to match with Breck 2020 results
+        TransmitModel2.set_pymsis_version(2)  # Must be 2000 to match with Breck 2020 results
         model2_obj = TransmitModel2(r02_obj, eband_derived_inputs)
         transmit_model = model2_obj.transmit_model
         h_list = model2_obj.h_list    # tangent point altitudes (km)
@@ -60,8 +60,8 @@ def main():
         t0_e, dt_e = comp_obj.t0_e, comp_obj.dt_e
         #  del comp_obj
 
-        np.save("/Users/nathanielruhl/Documents/HorizonCrossings-Summer22/nruhl_final_project/DensityMeasurement/timeTransmit.npy", np.column_stack((time_data, comp_obj.transmit_data)))
-        np.save("/Users/nathanielruhl/Documents/HorizonCrossings-Summer22/nruhl_final_project/DensityMeasurement/timeAlt.npy", np.column_stack((time_crossing_model+r02_obj.t0_model, h_list)))
+        np.save("./DensityRetrieval/timeTransmit.npy", np.column_stack((time_data, comp_obj.transmit_data)))
+        np.save("./DensityRetrieval/timeAlt.npy", np.column_stack((time_crossing_model+r02_obj.t0_model, h_list)))
 
         t0_e_list.append(t0_e)
         dt_e_list.append(dt_e)

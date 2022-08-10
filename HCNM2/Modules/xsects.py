@@ -78,6 +78,7 @@ class BCM:
 
 def main():
     import matplotlib.pyplot as plt
+    print(BCM.get_total_xsect(mean_energy_kev=1.5, mix_N=0.78, mix_O=0.21, mix_Ar=0.01, mix_C=0))
     E_kev = np.linspace(1, 10, 1000)
     plt.figure(1)
     plt.plot(E_kev, BCM.get_total_xsect(E_kev, 1, 0, 0, 0), label = "N")

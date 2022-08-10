@@ -22,13 +22,14 @@ hstar_list = np.linspace(0.0001, 0.001, 5000)
 plt.figure(1)
 plt.plot(Rorb_list, np.rad2deg(theta_max(Rorb_list, 1)))
 plt.ylabel(r"Maximum out-of-plane angle, $\theta_{{max}}$ (deg)")
-plt.xlabel(r"Non-dimensional orbital radius, $\frac{R_{{orbit}}}{R_{{planet}}}$")
+plt.xlabel(r"Non-dimensional orbital radius, $R^* = \frac{R_{{orbit}}}{R_{{planet}}}$")
 plt.grid()
 
 plt.figure(2)
 plt.plot(Rorb_list, F(Rorb_list, 1))
 plt.ylabel(r"Fraction of useful sky $F$")
-plt.xlabel(r"Non-dimensional orbital radius $\frac{R_{{orbit}}}{R_{{planet}}}$")
+plt.xlabel(
+    r"Non-dimensional orbital radius $R^* = \frac{R_{{orbit}}}{R_{{planet}}}$")
 plt.grid()
 
 plt.figure(3)
