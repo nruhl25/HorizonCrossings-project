@@ -6,6 +6,6 @@ from ObservationDictionaries.RXTE.dict_50099 import dict_50099
 from ObservationDictionaries.RXTE.dict_60079 import dict_60079
 from ObservationDictionaries.RXTE.dict_91802 import dict_91802
 
-all_dicts = [dict_91802, dict_60079, dict_40805, dict_50098]
+all_dicts = [dict_91802, dict_60079, dict_40805, dict_50099, dict_50098]
 
-# Note that observation 50099 has the lock-on problem, so it is not included
+# Note that observation 50098 has the lock-on problem, so it is not included

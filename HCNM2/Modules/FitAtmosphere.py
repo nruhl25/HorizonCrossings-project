@@ -1,14 +1,17 @@
 # Author: Nathaniel Ruhl
-# This script contains functions to "fit the atmosphere" to tanh() before doing navigation
+# This script contains functions to "fit the atmosphere" to tanh() before doing navigation. The class fits tanh() to the altitude curve rate
 
 from Modules.OrbitModel2 import OrbitModel2
 
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d
+import operator
+
+# self.comp_range is very helpful and indexes to self.time_meeasured, self, transmit_measuredd, and self.h_measured
 
 class FitAtmosphere(OrbitModel2):
-    def __init__(self, obs_dict, orbit_model, r0_obj, rate_data, time_data, unattenuated_rate, y50_predicted):
+    def __init__(self, obs_dict, orbit_model, r0_obj, rate_data, time_data, unattenuated_rate, e_band_kev, y50_predicted=100+6378):
         OrbitModel2.__init__(self, obs_dict, orbit_model)
         # Unpack r0_obj (LocateR0hcNav):
         self.s_unit = r0_obj.s_unit
@@ -18,6 +21,7 @@ class FitAtmosphere(OrbitModel2):
         self.A = r0_obj.A
         self.y50_predicted = y50_predicted
         self.h50_predicted = self.y50_predicted - self.y0_ref
+        self.e_band_kev = e_band_kev
 
         # Unpack other inputs:
         self.rate_data = rate_data
@@ -25,14 +29,24 @@ class FitAtmosphere(OrbitModel2):
         self.hc_type = self.obs_dict["hc_type"]
         self.unattenuated_rate = unattenuated_rate
 
-        # Derived values (note the convention that "measured" is in the shorter time window of time_crossing)
-        self.h_measured, self.n_measured, self.rate_measured, self.t_measured = self.calcTangentAltitudes(time_crossing=200)
+        # Derived values used in fit (note the convention that "measured" is in the shorter time window of time_crossing)
+        self.h_measured, self.n_measured, self.rate_measured, self.time_measured = self.calcTangentAltitudes(time_crossing=200)
         self.transmit_measured = self.rate_measured/self.unattenuated_rate  # used to define valid fit range
 
-        self.a_fit, self.b_fit, self.c_fit, self.d_fit, self.h1, self.h2 = self.fit_transmit_vs_alt()
-        self.dt = self.get_dt()  # navigational measurement
-        self.t0_e = self.t0_model - self.dt   # if applied at t0
-        # h1 and h2 is the valid altitude range for the arctangent fit
+        # Make measurements of y50 (and t50) via the tanh() fit
+        self.popt, self.pcov, self.comp_range = self.fit_transmit_vs_alt()
+        self.a_fit, self.b_fit, self.c_fit, self.d_fit = self.popt
+        self.h50_fit = np.arctanh((0.5-self.d_fit)/self.a_fit)/self.b_fit+self.c_fit
+        self.y50_fit = self.h50_fit + self.y0_ref
+        self.t50_fit = self.get_t50_fit()  # measured time at 50% transmission point
+        self.t50_newton = self.get_t50()  # directly from the data, not through tangent altitude
+
+        # Error analysis for y50 and t50
+        self.var_y50 = self.get_var_y50()  # varience of y50
+        self.dy50 = np.sqrt(self.var_y50)   # standard deviation of y50
+        self.var_t50 = self.get_var_t50()  # varience of t50
+        self.dt50 = np.sqrt(self.var_t50)  # standard deviation of t50
+        # h1 and h2 is the valid altitude range for the tanh fit
         # note that c_fit is a tangent altitude, not a radial distance to the tangent point
 
     # This function calculates y(t) that corresponds to the binned data
@@ -87,31 +101,108 @@ class FitAtmosphere(OrbitModel2):
         alt_n = np.linalg.norm(eci_vec) - self.y0_ref
         return alt_n
 
-    def fit_transmit_vs_alt(self):
-        # Note that w1 can't be defined if h0_ref is too large
-        comp_range = np.where((self.transmit_measured >= 0.01) & (self.transmit_measured <= 0.99))[0]
-        # if self.hc_type == "rising":
-        #     w1 = np.where(self.transmit_measured >= 0.01)[0][0]  # can't go to zero
-        #     w2 = np.where(self.transmit_measured >= 0.99)[0][0]+1
-        # elif self.hc_type == "setting":
-        #     w1 = np.where(self.transmit_measured <= 0.99)[0][0]
-        #     w2 = np.where(self.transmit_measured <= 0.01)[0][-1]+1
-        #     # can't go to zero (0.03 because of obs 50099, not 0.01)
-        transmit_measured = self.transmit_measured[comp_range]   #[w1:w2]
-        # specify valid range for fit
-        h_measured = self.h_measured[comp_range]   #[w1:w2]
-        popt, pcov = curve_fit(self.transmit_vs_h, h_measured, transmit_measured, p0=[
-                               0.5, 1/50, 100, 0.5])
-        a, b, c, d = popt
+    # This function is called from self.fit_transmit_vs_alt() and returns the horizon crossing index range for the curve fitting
+    def get_comp_range(self):
+        comp_range = np.where((self.transmit_measured <= 0.99) & (
+            self.transmit_measured >= 0.01))[0]  # initial comp_range
+        # Only get the range with the most consecutive ascending/descending values
+        num_dict = {}   # starting values are keys, number of sequential elements that follow are columns
+        for start_indx in range(len(comp_range)-1):
+            i = start_indx + 1
+            while (comp_range[start_indx] + (i-start_indx) == comp_range[i]) & (i < len(comp_range)-1):
+                i += 1
+            num_dict[comp_range[start_indx]] = i-start_indx
 
-        return a, b, c, d, h_measured[0], h_measured[-1]
+        sorted_tuples = sorted(num_dict.items(), key=operator.itemgetter(1))
+        # keys are the number of consecutive entries
+        sorted_dict = {v: k for k, v in sorted_tuples}
+        max_consec = max(list(num_dict.values()))
+        comp_range_better = sorted_dict[max_consec] + np.arange(0, max_consec+1, 1)
+        return comp_range_better
+
+    def fit_transmit_vs_alt(self):
+
+        comp_range = self.get_comp_range()
+
+        a_guess = 0.5
+        b_guess = 1/100    # we need to know how much tangent altitude is spanned from 1% to 99% (should be an under-estimate, use the highest energy to determine the under-estimate)
+        d_guess = 0.5
+        c_guess = 50 - np.arctanh((0.5-d_guess)/a_guess)/b_guess  # (must under-estimate y50 and thus c also)
+        transmit_measured = self.transmit_measured[comp_range]
+        # specify valid range for fit
+        h_measured = self.h_measured[comp_range]
+        popt, pcov = curve_fit(self.transmit_vs_h, h_measured, transmit_measured, p0=[
+                               a_guess, b_guess, c_guess, d_guess])
+
+        return popt, pcov, comp_range
 
     # hyperbolic tangent fit
     def transmit_vs_h(self, h, a, b, c, d):
         return a*np.tanh(b*(h-c))+d
 
-    def get_dt(self):
+    # convert from the y50_measurement to the t50 measurement
+    def get_t50_fit(self):
+        t_vs_h = interp1d(self.h_measured, self.time_measured, "cubic")
+        return t_vs_h(self.h50_fit)
+
+    def get_var_y50(self):
+        a, b, c, d = self.popt
+        partials = np.array([-(0.5 - d)/(a**2*b*(1 - (0.5 - d)**2/a**2)),
+                             -np.arctanh((0.5 - d)/a)/b**2,
+                             1,
+                             -1/(a*b*(1 - (0.5 - d)**2/a**2))])  # vector of partial derivatives
+        var_y50 = np.dot(partials.T, np.dot(self.pcov, partials))
+
+        # dc = 1e-5
+        # var_y50 = self.pcov[2,2]*((self.transmit_vs_h(self.h50_fit, self.a_fit, self.b_fit, self.c_fit+dc, self.d_fit)-self.transmit_vs_h(self.h50_fit, self.a_fit, self.b_fit, self.c_fit-dc, self.d_fit))/dc)**2
+        return var_y50
+
+    # midpoint derivative to get the varience of t50 based on the varience of y50
+    def get_var_t50(self):
         # define interpolating function between time and tangent altitude
-        t_vs_h = interp1d(self.h_measured, self.t_measured, "cubic")
-        dt = t_vs_h(self.c_fit) - t_vs_h(self.h50_predicted)
-        return dt
+        t_vs_h = interp1d(self.h_measured, self.time_measured, "cubic")
+        dy = 1e-5   # typically used for double precision machines
+        dt_dy = (t_vs_h(self.h50_fit+0.5*dy) - t_vs_h(self.h50_fit-0.5*dy))/dy
+        var_t50 = (dt_dy**2)*self.var_y50
+        return var_t50
+
+    def plot_tanh_fit(self):
+        import matplotlib.pyplot as plt
+        plt.plot(self.h_measured+self.y0_ref, self.rate_measured/self.unattenuated_rate, ".")
+        h_model = np.linspace(min(self.h_measured), max(self.h_measured), 1000)
+
+        plt.title(f"{self.e_band_kev[0]}-{self.e_band_kev[1]} keV")
+        plt.plot(h_model+self.y0_ref, self.transmit_vs_h(h_model,
+                                                            self.a_fit, self.b_fit, self.c_fit, self.d_fit))
+        plt.ylabel("Transmittance, $T$")
+        plt.xlabel("Tangent radius, $y$ (km)")
+        plt.show()
+        return 0
+
+        # Newton/secant method to determine t50
+
+
+    def get_t50(self):
+        if self.hc_type == "rising":
+            t50_guess_index = np.where(self.transmit_measured[self.comp_range] > 0.5)[0][0]
+        elif self.hc_type == "setting":
+            t50_guess_index = np.where(self.transmit_measured[self.comp_range] < 0.5)[0][0]
+        t50_guess = self.time_measured[self.comp_range][t50_guess_index]
+        transmit_vs_time = interp1d(
+            self.time_measured[self.comp_range], self.transmit_measured[self.comp_range], kind='linear')
+
+        f = lambda t: transmit_vs_time(t) - 0.5   # function to minimize
+        delta = 1
+        t50 = t50_guess
+        tlast = t50_guess + 0.05
+        num_iter = 0
+        while abs(delta) > 1e-5:
+            b = f(t50)
+            blast = f(tlast)
+            m = (b-blast)/(t50-tlast)
+            delta = b/m
+            tlast = t50
+            t50 -= delta
+            num_iter += 1
+
+        return t50

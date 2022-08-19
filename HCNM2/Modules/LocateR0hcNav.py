@@ -39,7 +39,7 @@ class LocateR0hcNav(OrbitModel2):
         n_accuracy = 1e-9  # km = 1 mm along los
         delta = 100.0
         num_iter = 0
-        while abs(delta) > n_accuracy and num_iter < 10:
+        while abs(delta) > n_accuracy and num_iter < 50:
             b = self.f(t, n)
             b_m = self.f(t, n-dn)   # b "minus"
             b_p = self.f(t, n+dn)   # b "plus"
@@ -85,7 +85,7 @@ class LocateR0hcNav(OrbitModel2):
         t_tolerance = 1e-6  # sec
         num_iter = 0
         num_iter = 1
-        while abs(delta) > t_tolerance and num_iter < 15:
+        while abs(delta) > t_tolerance and num_iter < 50:
             b = self.h(t)[0]
             m = (b - b_last)/(t-t_last)
             if b is np.nan or m is np.nan:

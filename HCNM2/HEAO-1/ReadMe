@@ -1,0 +1,189 @@
+VII/80            The HEAO A-1 X-Ray Source Catalog            (Wood+, 1984)
+================================================================================
+The HEAO A-1 X-Ray Source Catalog
+    Wood K.S., Meekins J.F., Yentis D.J., Smathers H.W., McNutt D.P.,
+    Bleach R.D., Byram E.T., Chubb T.A., Friedman H., Meidav M.
+   <Astroph. Jour. Suppl. 56, 507-649 (1984)>
+   =1984ApJS...56..507W
+================================================================================
+ADC_Keywords: X-ray sources
+Mission_Name: HEAO
+
+Abstract:
+    The  HEAO A-1 X-Ray  Source Catalog is  a compilation of  data for 842
+    sources  detected with the U. S.  Naval Research Laboratory Large Area
+    Sky  Survey Experiment  flown aboard  the HEAO  1 satellite.  The data
+    include source identifications, positions,  error  boxes,  mean  X-ray
+    intensities, and cross identifications to other source designations.
+
+Introduction:
+    The primary  objective of  the Naval  Research Laboratory  (NRL) Large
+    Area Sky  Survey Experiment (LASS)  flown aboard the  HEAO 1 satellite
+    was to conduct  an all-sky survey  for the brightest  X-ray sources in
+    the energy  range 0.25 to 25 keV.  The instrumentation consisted of an
+    array of  large  proportional  counter  modules  with  collimators  of
+    varying fields of view  and  with  sufficient  sensitivity  to  detect
+    sources as faint as 0.25 mu.Jy at 5 keV, assuming a Crab-like spectrum
+    (1.1 muJy at 5 keV =  1  UFU  for  a  Crab-like  spectrum).  Full  sky
+    coverage was achieved  in  the  first  6  months  of  the  mission  by
+    continuously scanning great circles  perpendicular  to  the  Earth-Sun
+    line.  The HEAO A-1 catalog results from the 6-month survey and, thus,
+    covers  the whole sky.  For additional information  concerning the NRL
+    LASS instrument, the data  analysis  procedures,  characteristics  and
+    limitations of the source data,  and  a  discussion  of  X-ray  source
+    classes, the source publication should be consulted.
+
+File Summary:
+--------------------------------------------------------------------------------
+ FileName     Lrecl     Records        Explanations
+--------------------------------------------------------------------------------
+ReadMe          80           .          This file
+sources.dat    303         842          The data
+--------------------------------------------------------------------------------
+
+Byte-by-byte description of file: sources.dat
+--------------------------------------------------------------------------------
+Bytes      Format      Unit      Label       Explanations
+--------------------------------------------------------------------------------
+  1- 10      A10      ---         name       Source designation (1H)
+ 12- 17      F6.2     deg         RAdeg      Right ascension 1950 in degrees
+ 19- 20      I2       h           RAh        RA (B1950.0) hours
+ 22- 23      I2       min         RAm        RA (B1950.0) minutes   
+ 25- 26      I2       s           RAs        RA (B1950.0) seconds 
+ 28- 33      F6.2     deg         DEdeg      Declination 1950 in degrees
+ 35          A1       ---         DE-        Declination sign
+ 36- 37      I2       deg         DEd        Dec (1950.0) degrees 
+ 39- 40      I2       arcmin      DEm        Dec (1950.0) minutes 
+ 42- 43      I2       arcsec      DEs        Dec (1950.0) seconds 
+ 45- 50      F6.2     deg         GLON       Galactic longitude
+ 52- 57      F6.2     deg         GLAT       Galactic latitude
+ 59- 64      F6.2     deg         ELON       Ecliptic longitude
+ 66- 71      F6.2     deg         ELAT       Ecliptic latitude
+ 73- 78      F6.2     deg         RA1        Right ascension_1 (1)
+ 80- 85      F6.2     deg         DE1        Declination_1. (1)
+ 87- 92      F6.2     deg         RA2        Right ascension_2 (1)
+ 94- 99      F6.2     deg         DE2        Declination_2 (1)
+101-106      F6.2     deg         RA3        Right ascension_3 (1)
+108-113      F6.2     deg         DE3        Declination_3 (1)
+115-120      F6.2     deg         RA4        Right ascension_4 (1)
+122-127      F6.2     deg         DE4        Declination_4 (1)
+129-133      F5.3     deg2        area       Area of error box
+135-141      F7.4  ct/cm2/s       flux       Flux (2)
+143-148      F6.4  ct/cm2/s       e_flux     Flux error (2)
+150-161      A12      ---         name2      Alternate designation (X-ray) (3)
+163-174      A12      ---         name3      Alternate designation (X-ray) (3)
+176-188      A13      ---         name4      Alternate designation (X-ray) (3)
+189-200      A12      ---         name5      Alternate designation (X-ray) (3)
+202-213      A12      ---         name6      Alternate designation (X-ray) (3)
+215-226      A12      ---         name7      Alternate designation (X-ray) (3) 
+228-239      A12      ---         name8      Alternate designation (X-ray) (3)
+241-255      A15      ---         name9      Alternate desig. (non-X-ray) (3)
+257-271      A15      ---         name10     Alternate desig. (non-X-ray) (3)
+273-287      A15      ---         name11     Alternate desig. (non-X-ray) (3)
+289-303      A15      ---         name12     Alternate desig. (non-X-ray) (3)
+--------------------------------------------------------------------------------
+Note (1):
+    The source coordinates (center of error box) are given in degrees and
+    in sexagesimal form. The subscripted right ascensions and declinations
+    (right ascension_1-4, declination_1-4) give the positions of the 95
+    percent confidence error box surrounding each source. All positions
+    are for equinox B1950.0.
+Note (2):
+    The apparent intensity of the source in counts/sq.cm/s for 0.5 - 25
+    keV. The determination of the errors is described in Section III of
+    the source reference (Wood et al. 1984). As explained in that paper,
+    an intensity of 10**-3. counts/sq.cm/s, which is the limiting flux in
+    the catalog, corresponds to 3.3*10**-12 ergs/sq.cm/s in 2-10 keV, both
+    for a Crab-like spectrum, meaning that 10**-3 counts/sq.cm/s in HEAO
+    A-1 is equivalent to 0.20 UFU or to 0.22 muJy at 5.2 keV, again for a
+    Crab-like spectrum.
+Note (3):
+    The first seven fields (bytes 150-239) contain alternate designations
+    of each source in other X-ray catalogs, while the last four fields are
+    for non-X-ray cross identifications. Catalog identifications and
+    references are given in Table 5 of the source paper. Cross
+    identifications were selected according to certain criteria. For X-ray
+    catalogs (4U, 2A, 1M, etc.), where error boxes of up to several
+    degrees are sometimes reported, the cross reference is given whenever
+    the other error box intersects the HEAO A-1 error box. Identifiers are
+    also given in certain cases where boxes do not strictly intersect but
+    are sufficiently close to suggest a possible relationship. The
+    criterion used is that the separation between box centers must be less
+    than the sum of the two largest dimensions. The designation XRS (not
+    included in Table 5, but described in text) is from Amnuel, Guseinov,
+    and Rakhamimov (1979), 4hich summarizes much of the older X-ray
+    literature.
+
+    Non-X-ray cross identifications were made on several bases. Whenever
+    an identification has been firmly established, for example, by a
+    precise position from a modulation collimator or from the Einstein
+    Observatory, it is always shown, but so are many additional tentative
+    identifications. Some of these have been suggested by earlier work (in
+    which case the earlier literature appears either in Table 5 or Table 6
+    of the source reference) and the remainder have been found by
+    searching the non-X-ray catalogs listed by the authors in their Table
+    5. Additional information on selection criteria will be found on page
+    647 of the source reference.
+
+    Whenever an (R) appears in the last field, additional references and
+    comments will be found in Table 6 of the source reference. Those
+    entries are intended primarily to provide a sketch of the basic
+    background and current state of knowledge concerning the sources, to
+    direct users to further literature, and to clarify ambiguities. They
+    are not intended to be a comprehensive bibliography and many
+    references are omitted. A special effort has been made to provide
+    cross references to other HEAO 1 literature wherever possible, since
+    other HEAO 1 observations are simultaneous with and complementary to
+    those in the catalog.
+
+History:
+    The HEAO A-1 X-Ray Source Catalog was received on magnetic tape by the
+    National Space Science Data Center on 20 July 1984 from Dr. Kent S.
+    Wood of the Naval Research Laboratory. The tape was in VAX VMS BACKUP
+    format with variable length logical and physical records, plus special
+    control words (logical record length of each record in the first four
+    bytes.) A program was written to convert the records to fixed length
+    and the tape file was processed to disk storage on the IBM 3081
+    computer of the NASA Space and Earth Sciences Computing Center at
+    GSFC. The format of the file was identical to Table 4 of the published
+    catalog, meaning that there were 10 sources per group (page in the
+    published catalog), separated by column headings and blank records,
+    etc. All blank, text, and separator records were removed with an
+    editor, leaving just four records per source. A format was designed
+    that rearranged the data in logical order for a single record per
+    source structure, and a program was written and executed to reformat
+    the data. The advantages of the single record per source structure are
+    that all records are entirely uniform and the catalog can be sorted
+    and searched easily.
+
+    The original catalog contained the error box positions in both decimal
+    and sexagesimal form. The latter data were omitted during the
+    conversion in order to decrease the final record length, since the
+    sexagesimal data can be reconstructed easily from the decimal
+    positions given.
+
+Acknowledgments:
+    Appreciation is expressed to Kent Wood for communicating about the
+    catalog in 1986 and for supplying multiple copies of the source paper.
+    Dr. Warren also thanks Dr. Wood for reviewing and commenting on a
+    draft version of this document.
+
+    The help of Jonathan McDowell of the Harvard-Smithsonian Center for
+    Astrophysics is also gratefully acknowledged. Dr. McDowell requested a
+    machine-readable copy of the catalog and made suggestions about the
+    proposed format, including the elimination of the redundant error box
+    positions in sexagesimal form.
+
+    The catalog was edited and the documentation prepared by Dr. Wayne
+    Warren. It was translated from Script to ASCII and put in the current
+    standard form by the undersigned.
+
+References:
+   Amnuel, P. R., Guseinox, O. H., and Rakhamimov, Sh. Yu. 1979, 
+      =1979ApJS...41..327A
+   Wood, K. S., Meekins, J. F., Yentis, D. J., Smathers, H. W., McNutt, D.
+      P., Bleach, R. D., Byram, E. T., Chubb, T. A., Friedman, H., and
+      Meidav, M. 1984, The HEAO A-1 X-Ray Source Catalog, 
+      =1984ApJS...56..507W
+================================================================================
+(End)           Nancy G. Roman       [ADC/SSDOO]                     08-May-1995

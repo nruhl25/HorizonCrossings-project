@@ -55,35 +55,36 @@ def RXTE_MSIS_Driver(obs_dict, e_band_ch, plot_color='tab:blue'):
     plt.legend()
 
     print(f"t0_model={r02_obj.t0_model}")
-    print(f"t0_e={t0_e}")
+    print(f"t0_e={t0_e}+/-{dt_e}")
+    print(f"Delta t0 = {r02_obj.t0_model-t0_e}")
     print(f"r0={r02_obj.r0_hc}")
     return 0
 
 # h50_expected is filter estimate
-
 
 def RXTE_Nav_Driver(obs_dict, e_band_ch, h0_ref, orbit_model="rossi", y50_predicted = 6482.5988-2):
     r0_obj=LocateR0hcNav(obs_dict, orbit_model, h0_ref)
 
     #2) Read in RXTE data for the specified energy band
     rate_data, time_data, normalized_amplitudes, bin_centers_kev, unattenuated_rate, e_band_kev=read_rxte_data(obs_dict, e_band_ch)
+    transmit_data = rate_data/unattenuated_rate
 
     #3) Fit count rate vs h (geocentric tangent altitudes above y0_ref)
-    fit_obj=FitAtmosphere(obs_dict, orbit_model, r0_obj, rate_data, time_data, unattenuated_rate, y50_predicted)
+    fit_obj=FitAtmosphere(obs_dict, orbit_model, r0_obj, rate_data, time_data, unattenuated_rate, e_band_kev, y50_predicted)
 
-    plt.plot(fit_obj.h_measured+fit_obj.y0_ref, fit_obj.rate_measured/fit_obj.unattenuated_rate, ".")
-    h_model = np.linspace(min(fit_obj.h_measured), max(fit_obj.h_measured), 1000)
-    plt.plot(h_model+fit_obj.y0_ref, fit_obj.transmit_vs_h(h_model,
-                                                           fit_obj.a_fit, fit_obj.b_fit, fit_obj.c_fit, fit_obj.d_fit))
-    plt.ylabel("Transmittance, $T$")
-    plt.xlabel("Tangent radius, $y$")
-    plt.show()
+    # fit_obj.plot_tanh_fit()  # if you want to see the fit
 
-    print(f"y50_measured = {fit_obj.c_fit+fit_obj.y0_ref}")
-    print(f"t0_model={r0_obj.t0_model}")
-    print(f"dt={fit_obj.dt}")
-    print(f"r0={r0_obj.r0_hc}")
+    #4) Determine r50 and t50_model by changing h0_ref in LocateR0hcNav
+    r50_obj = LocateR0hcNav(obs_dict, orbit_model, h0_ref=fit_obj.h50_fit+h0_ref)
+    r50_model = r50_obj.r0_hc
+    t50_model = r50_obj.t0_model
 
+    print(f"Channel {e_band_ch}: ")
+    print(f"h50_measured = {fit_obj.h50_fit} +/- {fit_obj.dy50} km")
+    print(f"t50_from_h50={fit_obj.t50_fit} +/- {fit_obj.dt50} sec")
+    print(f"t50_newton = {fit_obj.t50_newton} sec")
+    print(f"t50_model = {t50_model} sec")
+    print(f"Delta t50 = {t50_model - fit_obj.t50_fit} sec")
     return 0
 
 def main():
@@ -93,6 +94,10 @@ def main():
     print(f"Navigation Driver: ")
     RXTE_Nav_Driver(obs_dict, e_band_ch, h0_ref=40)
 
+    print(f"MSIS_Driver: ")
+    RXTE_MSIS_Driver(obs_dict, e_band_ch)
+
+    # Plot showing multiple energy bands with colors
     # a1 = np.arange(6, 28, 3)
     # a2 = np.arange(9, 31, 3)
     # e_band_ch_array = np.column_stack((a1, a2))

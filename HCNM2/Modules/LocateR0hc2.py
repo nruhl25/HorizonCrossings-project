@@ -102,9 +102,8 @@ class LocateR0hc2(OrbitModel2):
         t_last = t1 - 1  # initial guess for secant method
         b_last = self.h(t_last)[0]   # must be initialized before for loop
         delta = 1.0  # sec time error
-        t_tolerance = 1e-5  # sec  # corresponds to about 1e-8 km graze tolerance
+        t_tolerance = 1e-5  # sec  # 1e-5 sec corresponds to about 1e-8 km graze tolerance
         num_iter = 0
-        num_iter = 1
         while abs(delta) > t_tolerance and num_iter < 15:
             b = self.h(t)[0]
             m = (b - b_last)/(t-t_last)

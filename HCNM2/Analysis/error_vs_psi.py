@@ -14,7 +14,6 @@ from Modules.generate_nans_rxte import generate_nans_rxte
 from Preprocessing.RXTE_channel_to_keV import channel_to_keV_epoch5
 from Modules.CurveComparison import CurveComparison
 from Modules.get_unattenuated_rate_RXTE import get_unattenuated_rate_RXTE
-from Old_Code.calculate_psi import calculate_psi
 
 cwd = str(Path(__file__).parents[1])  # HCNM2/ is cwd
 
@@ -67,7 +66,7 @@ def RXTE_driver(obs_dict, e_band_ch):
     comp_obj = CurveComparison(obs_dict, model_and_data_tuple)
     t0_e, dt_e = comp_obj.t0_e, comp_obj.dt_e
     del comp_obj
-    return t0_e, dt_e, r02_obj.t0_model
+    return t0_e, dt_e, r02_obj.t0_model, r02_obj.psi_deg
 
 
 def err_vs_psi(x, a, b):
@@ -75,15 +74,10 @@ def err_vs_psi(x, a, b):
 
 
 def main():
-
-    e_band_ch_array = np.array([[7-1, 9],
-                                [10-1, 12],
-                                [13-1, 15],
-                                [16-1, 18],
-                                [19-1, 21],
-                                [22-1, 24],
-                                [25-1, 27],
-                                [28-1, 30]])
+    # Create array with energy band channels for RXTE
+    a1 = np.arange(6, 28, 3)
+    a2 = np.arange(9, 31, 3)
+    e_band_ch_array = np.column_stack((a1, a2))
 
     for e_band_ch in e_band_ch_array:
         e_band_kev = channel_to_keV_epoch5(e_band_ch)
@@ -95,16 +89,15 @@ def main():
         psi_list = []  # deg out of plane
 
         for obs_dict in all_dicts:
-            t0_e, dt_e, t0_model = RXTE_driver(obs_dict, e_band_ch)
-            psi = np.rad2deg(calculate_psi(obs_dict))
+            t0_e, dt_e, t0_model, psi_deg = RXTE_driver(obs_dict, e_band_ch)
 
-            plt.scatter(psi, abs(t0_e-t0_model), label=obs_dict['obsID'])
+            plt.scatter(psi_deg, abs(t0_e-t0_model), label=obs_dict['obsID'])
 
             # Don't use 50098 in the trendline
             if obs_dict['obsID'] != 50098:
                 Dt_list.append(abs(t0_e-t0_model))
                 dt_list.append(dt_e)
-                psi_list.append(psi)
+                psi_list.append(psi_deg)
                 obsID_list.append(obs_dict['obsID'])
 
         # Calculate and plot trendline
@@ -112,7 +105,7 @@ def main():
         a, b = popt
         x = np.linspace(min(psi_list), max(psi_list), 1000)
         y = err_vs_psi(x, a, b)
-        plt.plot(x, y, label=fr"$\Delta t$ = {a:.2f}$\psi$+{b:.2f}")
+        plt.plot(x, y, label=fr"$\Delta t$ = {a:.3f}$\psi$+{b:.3f}")
 
         plt.title(f"RXTE Horizon Crossings of Crab Nebula ({e_band_kev[0]}-{e_band_kev[1]} keV)")
         plt.xlabel(r"Out-of-plane angle to source, $\psi$ (deg)")
