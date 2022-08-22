@@ -52,6 +52,7 @@ def get_errors_RXTE(obs_dict, h0_ref, orbit_model="rossi"):
 obs_dict = all_dicts[0]
 N0_list, dy50_list, dt50_list = get_errors_RXTE(obs_dict, h0_ref=40)
 plt.plot(N0_list, dt50_list, '.')
+plt.title("RXTE Crossing (all energy bands)")
 plt.xlabel("Unattenuated Count Rate (ct/sec)")
 plt.ylabel("Standard deviation of measurement (sec)")
 plt.show()

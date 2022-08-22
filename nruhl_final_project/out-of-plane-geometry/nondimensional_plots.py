@@ -16,20 +16,20 @@ def F(R_orbit, R_planet):
 def Delta_r0star(h_star, R_orbit, R_planet):
     return R_orbit*h_star/(R_orbit*np.cos(theta_max(R_orbit, R_planet)))
 
-Rorb_list = np.arange(1,6,0.0001)
+Rorb_list = np.arange(1, 20, 0.0001)
 hstar_list = np.linspace(0.0001, 0.001, 5000)
 
 plt.figure(1)
 plt.plot(Rorb_list, np.rad2deg(theta_max(Rorb_list, 1)))
 plt.ylabel(r"Maximum out-of-plane angle, $\theta_{{max}}$ (deg)")
-plt.xlabel(r"Non-dimensional orbital radius, $R^* = \frac{R_{{orbit}}}{R_{{planet}}}$")
+plt.xlabel(r"Non-dimensional orbital radius $R^*$")
 plt.grid()
 
 plt.figure(2)
 plt.plot(Rorb_list, F(Rorb_list, 1))
-plt.ylabel(r"Fraction of useful sky $F$")
+plt.ylabel(r"Fraction of useful sky, $F$")
 plt.xlabel(
-    r"Non-dimensional orbital radius $R^* = \frac{R_{{orbit}}}{R_{{planet}}}$")
+    r"Non-dimensional orbital radius, $R^*$")
 plt.grid()
 
 plt.figure(3)
@@ -48,6 +48,16 @@ plt.plot(h_list*1000, 1000*R_earth*Delta_r0star(h_list/R_earth,
 plt.xlabel("Uncertainty in tangent point altitude due to topography (m)")
 plt.ylabel("Geometrical in-track error (m)")
 plt.grid()
+
+fig, ax = plt.subplots(1, 2)
+ax[0].plot(Rorb_list, np.rad2deg(theta_max(Rorb_list, 1)))
+ax[0].set_ylabel(r"Maximum out-of-plane angle, $\theta_{{max}}$ (deg)")
+ax[0].grid()
+ax[1].plot(Rorb_list, F(Rorb_list, 1))
+ax[1].set_ylabel(r"Fraction of useful sky, $F$")
+fig.supxlabel(r"Non-dimensional orbital radius, $R^*$")
+ax[1].grid()
+fig.tight_layout()
 
 
 plt.show()

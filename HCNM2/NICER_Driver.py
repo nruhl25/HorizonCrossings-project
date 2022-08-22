@@ -20,7 +20,7 @@ import numpy as np
 
 def main():
     # remember, with crab, you mut alter the curve comparison range below
-    obs_dict = crabNICER
+    obs_dict = v4641NICER
     bin_size = 1.0   # sec
     e_band_array = np.array([[1.0, 2.0], [2.0, 3.0], [3.0, 4.0], [4.0, 5.0]])
     e_band_array = np.array([[1.0, 2.0]])

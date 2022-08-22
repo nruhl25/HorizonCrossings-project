@@ -147,14 +147,17 @@ class FitAtmosphere(OrbitModel2):
 
     def get_var_y50(self):
         a, b, c, d = self.popt
-        partials = np.array([-(0.5 - d)/(a**2*b*(1 - (0.5 - d)**2/a**2)),
+        partials_y50 = np.array([-(0.5 - d)/(a**2*b*(1 - (0.5 - d)**2/a**2)),
                              -np.arctanh((0.5 - d)/a)/b**2,
                              1,
-                             -1/(a*b*(1 - (0.5 - d)**2/a**2))])  # vector of partial derivatives
-        var_y50 = np.dot(partials.T, np.dot(self.pcov, partials))
-
-        # dc = 1e-5
-        # var_y50 = self.pcov[2,2]*((self.transmit_vs_h(self.h50_fit, self.a_fit, self.b_fit, self.c_fit+dc, self.d_fit)-self.transmit_vs_h(self.h50_fit, self.a_fit, self.b_fit, self.c_fit-dc, self.d_fit))/dc)**2
+                             -1/(a*b*(1 - (0.5 - d)**2/a**2))])  # vector of partial derivatives of y_50
+        var_y50 = np.dot(partials_y50.T, np.dot(self.pcov, partials_y50))
+        ###### Try only including certain fit parameters in the error #####
+        # partials_short = np.array([-np.arctanh((0.5 - d)/a)/b**2, 1])  # b and c
+        # pcov_short = np.zeros((2,2))
+        # pcov_short[0,0] = self.pcov[0,0]
+        # pcov_short[1,1] = self.pcov[1,1]
+        # var_y50 = np.dot(partials_short.T, np.dot(pcov_short, partials_short))
         return var_y50
 
     # midpoint derivative to get the varience of t50 based on the varience of y50
@@ -179,9 +182,7 @@ class FitAtmosphere(OrbitModel2):
         plt.show()
         return 0
 
-        # Newton/secant method to determine t50
-
-
+    # Newton/secant method to determine t50 directly from time and transmission data
     def get_t50(self):
         if self.hc_type == "rising":
             t50_guess_index = np.where(self.transmit_measured[self.comp_range] > 0.5)[0][0]
