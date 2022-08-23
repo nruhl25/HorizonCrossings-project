@@ -22,6 +22,7 @@ dict_91802 = {   # BASIC OBSERVATION INFO
             "f107": 76.1,
             "Ap": 20,
             "SN": 18,
+            "TOD": 2.412085,   # calculated in atmospheric_dynamics_model.ipynb
 
             # PATHS TO DATA FILES
             "rossi_path": cwd + "/Data/RXTE/91802/FPorbit_Day4325",  # orbital solution

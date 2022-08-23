@@ -23,6 +23,7 @@ dict_40805 = {   # BASIC OBSERVATION INFO
             "f107": 107.6,
             "Ap": 4,
             "SN": 62,
+            "TOD": 1.409454,   # calculated inatmospheric_dynamics_model.ipynb
 
 
             # PATHS TO DATA FILES

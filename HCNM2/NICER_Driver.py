@@ -60,8 +60,8 @@ def main():
         t0_e, dt_e = comp_obj.t0_e, comp_obj.dt_e
         #  del comp_obj
 
-        np.save("./DensityRetrieval/timeTransmit.npy", np.column_stack((time_data, comp_obj.transmit_data)))
-        np.save("./DensityRetrieval/timeAlt.npy", np.column_stack((time_crossing_model+r02_obj.t0_model, h_list)))
+        # np.save("./DensityRetrieval/timeTransmit.npy", np.column_stack((time_data, comp_obj.transmit_data)))
+        # np.save("./DensityRetrieval/timeAlt.npy", np.column_stack((time_crossing_model+r02_obj.t0_model, h_list)))
 
         t0_e_list.append(t0_e)
         dt_e_list.append(dt_e)

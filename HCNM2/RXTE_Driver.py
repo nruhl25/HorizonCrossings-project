@@ -62,7 +62,7 @@ def RXTE_MSIS_Driver(obs_dict, e_band_ch, plot_color='tab:blue'):
 
 # h50_expected is filter estimate
 
-def RXTE_Nav_Driver(obs_dict, e_band_ch, h0_ref, orbit_model="rossi", y50_predicted = 6482.5988-2):
+def RXTE_Nav_Driver(obs_dict, e_band_ch, h0_ref, orbit_model="rossi"):
     r0_obj=LocateR0hcNav(obs_dict, orbit_model, h0_ref)
 
     #2) Read in RXTE data for the specified energy band
@@ -70,7 +70,7 @@ def RXTE_Nav_Driver(obs_dict, e_band_ch, h0_ref, orbit_model="rossi", y50_predic
     transmit_data = rate_data/unattenuated_rate
 
     #3) Fit count rate vs h (geocentric tangent altitudes above y0_ref)
-    fit_obj=FitAtmosphere(obs_dict, orbit_model, r0_obj, rate_data, time_data, unattenuated_rate, e_band_kev, y50_predicted)
+    fit_obj=FitAtmosphere(obs_dict, orbit_model, r0_obj, rate_data, time_data, unattenuated_rate, e_band_kev)
 
     # fit_obj.plot_tanh_fit()  # if you want to see the fit
 
@@ -80,6 +80,7 @@ def RXTE_Nav_Driver(obs_dict, e_band_ch, h0_ref, orbit_model="rossi", y50_predic
     t50_model = r50_obj.t0_model
 
     print(f"Channel {e_band_ch}: ")
+    print(f"h50_adm = {fit_obj.h50_predicted}")
     print(f"h50_measured = {fit_obj.h50_fit} +/- {fit_obj.dy50} km")
     print(f"t50_from_h50={fit_obj.t50_fit} +/- {fit_obj.dt50} sec")
     print(f"t50_newton = {fit_obj.t50_newton} sec")

@@ -22,6 +22,7 @@ dict_50098 = {   # BASIC OBSERVATION INFO
             "f107": 235.8,
             "Ap": 8,
             "SN": 322,
+            "TOD": 0.535804,   # calculated in atmospheric_dynamics_model.ipynb
 
             # PATHS TO DATA FILES
             "rossi_path": cwd + "/Data/RXTE/50098/FPorbit_Day2389",  # orbital solution

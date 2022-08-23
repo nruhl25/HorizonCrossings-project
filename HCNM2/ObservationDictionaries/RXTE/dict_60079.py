@@ -23,6 +23,7 @@ dict_60079 = {   # BASIC OBSERVATION INFO
             "f107": 175.6,
             "Ap": 2,
             "SN": 160,
+            "TOD": 1.336315,   # calculated in atmospheric_dynamics_model.ipynb
 
             # PATHS TO DATA FILES
             "rossi_path": cwd + "/Data/RXTE/60079/FPorbit_Day3008",  # orbital solution

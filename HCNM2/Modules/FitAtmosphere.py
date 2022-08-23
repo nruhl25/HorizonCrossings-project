@@ -2,6 +2,7 @@
 # This script contains functions to "fit the atmosphere" to tanh() before doing navigation. The class fits tanh() to the altitude curve rate
 
 from Modules.OrbitModel2 import OrbitModel2
+from Modules.ADM import predict_y50
 
 import numpy as np
 from scipy.optimize import curve_fit
@@ -11,7 +12,7 @@ import operator
 # self.comp_range is very helpful and indexes to self.time_meeasured, self, transmit_measuredd, and self.h_measured
 
 class FitAtmosphere(OrbitModel2):
-    def __init__(self, obs_dict, orbit_model, r0_obj, rate_data, time_data, unattenuated_rate, e_band_kev, y50_predicted=100+6378):
+    def __init__(self, obs_dict, orbit_model, r0_obj, rate_data, time_data, unattenuated_rate, e_band_kev):
         OrbitModel2.__init__(self, obs_dict, orbit_model)
         # Unpack r0_obj (LocateR0hcNav):
         self.s_unit = r0_obj.s_unit
@@ -19,9 +20,9 @@ class FitAtmosphere(OrbitModel2):
         self.y0_ref = r0_obj.y0_ref   # R_b in Breck 2023 paper
         self.t0_model = r0_obj.t0_model
         self.A = r0_obj.A
-        self.y50_predicted = y50_predicted
-        self.h50_predicted = self.y50_predicted - self.y0_ref
         self.e_band_kev = e_band_kev
+        self.y50_predicted = predict_y50(self.obs_dict, self.e_band_kev)
+        self.h50_predicted = self.y50_predicted - self.y0_ref
 
         # Unpack other inputs:
         self.rate_data = rate_data
