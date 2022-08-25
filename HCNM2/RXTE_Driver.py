@@ -86,6 +86,8 @@ def RXTE_Nav_Driver(obs_dict, e_band_ch, h0_ref, orbit_model="rossi"):
     print(f"t50_newton = {fit_obj.t50_newton} sec")
     print(f"t50_model = {t50_model} sec")
     print(f"Delta t50 = {t50_model - fit_obj.t50_fit} sec")
+    dt50_slide = fit_obj.get_dt50_slide()
+    print(f"dt50_slide={dt50_slide} sec")
     return 0
 
 def main():
@@ -93,6 +95,7 @@ def main():
     obs_dict = all_dicts[1]
     e_band_ch = [7-1, 9]
     print(f"Navigation Driver: ")
+    # Big picture: h0_ref is really only used to get a preliminary idea of where the crossing is in the orbit
     RXTE_Nav_Driver(obs_dict, e_band_ch, h0_ref=40)
 
     print(f"MSIS_Driver: ")

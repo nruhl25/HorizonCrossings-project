@@ -194,3 +194,34 @@ def calc_h(phi, eci_vec):
     return h
 
 
+def minimize_scalar(f, x0, dx=1e-5, tol=1e-9):
+    '''This function minimizes a scalar function of one variable via newton's method, dx is the step size used to calculate the central differences'''
+    x = x0
+    delta = 1
+    num_iter = 0
+    while delta > tol and num_iter < 50:
+        f_c = f(x)  # current
+        f_m = f(x-dx)  # minus
+        f_p = f(x+dx)   # plus
+        g = (f_p - f_m)/(2*dx)
+        gg = (f_m - 2*f_c + f_p)/dx**2
+        delta = g/gg
+        x -= delta
+        num_iter += 1
+    return x
+
+
+def root_scalar(f, x0, x0_last, tol=1e-9):
+    '''This function applies Newton's method for finding the root of a uni-variate function via the secant method for the definition of derivatives'''
+    x = x0
+    xlast = x0_last
+    delta = 1
+    num_iter = 0
+    while delta > tol and num_iter < 20:
+        b = f(x)
+        blast = f(xlast)
+        m = (b-blast)/(x-xlast)
+        delta = b/m
+        x -= delta
+        num_iter += 1
+    return x

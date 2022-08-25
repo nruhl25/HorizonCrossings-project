@@ -29,6 +29,7 @@ def get_errors_RXTE(obs_dict, h0_ref, orbit_model="rossi"):
     # Lists for dy50, dt50, and unattenuated_rate
     dy50_list = []
     dt50_list = []
+    dt50_slide_list = []
     N0_list = []
 
     for e_band_ch in e_band_ch_array:
@@ -40,19 +41,26 @@ def get_errors_RXTE(obs_dict, h0_ref, orbit_model="rossi"):
         #3) Fit count rate vs h (geocentric tangent altitudes above y0_ref)
         fit_obj = FitAtmosphere(obs_dict, orbit_model, r0_obj,
                                 rate_data, time_data, unattenuated_rate, e_band_kev)
-        fit_obj.plot_tanh_fit()
+        # fit_obj.plot_tanh_fit()
         N0_list.append(unattenuated_rate)
         dy50_list.append(fit_obj.dy50)
         dt50_list.append(fit_obj.dt50)
-
-    return N0_list, dy50_list, dt50_list
+        dt50_slide_list.append(fit_obj.dt50_slide)
+    return N0_list, dy50_list, dt50_list, dt50_slide_list
 
 
 # Choose observation
-obs_dict = all_dicts[0]
-N0_list, dy50_list, dt50_list = get_errors_RXTE(obs_dict, h0_ref=40)
-plt.plot(N0_list, dt50_list, '.')
-plt.title("RXTE Crossing (all energy bands)")
+# obs_dict = all_dicts[0]
+plt.figure()
+for obs_dict in all_dicts:
+    N0_list, dy50_list, dt50_list, dt50_slide_list = get_errors_RXTE(obs_dict, h0_ref=40)
+    plt.plot(N0_list, dt50_slide_list, '.', label=f'obsID={obs_dict["obsID"]}')
+
+# create a trendline for the NICER data (AAS 22-073)
+counts = np.linspace(300, 3500, 1000)
+plt.plot(counts, 1.71/np.sqrt(counts), label='NICER results')
+plt.legend()
+plt.title("RXTE Crossing Measurement Uncertainties (all energy bands)")
 plt.xlabel("Unattenuated Count Rate (ct/sec)")
-plt.ylabel("Standard deviation of measurement (sec)")
+plt.ylabel(r"Standard deviation of measurement, $\delta t_{e}$ (sec)")
 plt.show()

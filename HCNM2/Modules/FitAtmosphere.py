@@ -3,6 +3,7 @@
 
 from Modules.OrbitModel2 import OrbitModel2
 from Modules.ADM import predict_y50
+from Modules.tools import minimize_scalar, root_scalar
 
 import numpy as np
 from scipy.optimize import curve_fit
@@ -21,7 +22,7 @@ class FitAtmosphere(OrbitModel2):
         self.t0_model = r0_obj.t0_model
         self.A = r0_obj.A
         self.e_band_kev = e_band_kev
-        self.y50_predicted = predict_y50(self.obs_dict, self.e_band_kev)
+        self.y50_predicted = predict_y50(self.obs_dict, self.e_band_kev)   # TODO: This only has the ADM for a single energy band! (h50_fit and h50_predict won't be close)
         self.h50_predicted = self.y50_predicted - self.y0_ref
 
         # Unpack other inputs:
@@ -35,20 +36,22 @@ class FitAtmosphere(OrbitModel2):
         self.transmit_measured = self.rate_measured/self.unattenuated_rate  # used to define valid fit range
 
         # Make measurements of y50 (and t50) via the tanh() fit
+        # note that c_fit is a tangent altitude, not a radial distance to the tangent point
         self.popt, self.pcov, self.comp_range = self.fit_transmit_vs_alt()
         self.a_fit, self.b_fit, self.c_fit, self.d_fit = self.popt
         self.h50_fit = np.arctanh((0.5-self.d_fit)/self.a_fit)/self.b_fit+self.c_fit
-        self.y50_fit = self.h50_fit + self.y0_ref
-        self.t50_fit = self.get_t50_fit()  # measured time at 50% transmission point
-        self.t50_newton = self.get_t50()  # directly from the data, not through tangent altitude
+        self.y50_fit = self.h50_fit + self.y0_ref # (ATMOSPHERIC MEASUREMENT)
+        self.t50_fit = self.get_t50_fit()  # measured time at 50% transmission point (NAV MEASUREMENT)
+        self.t50_newton = self.get_t50_newton()  # directly from the data, not through tangent altitude
 
-        # Error analysis for y50 and t50
-        self.var_y50 = self.get_var_y50()  # varience of y50
+        # Error analysis for y50 and t50 from propogation of tanh() fit parameters
+        self.var_y50 = self.get_var_y50()  # varience of y50 (for atmospheric filter)
         self.dy50 = np.sqrt(self.var_y50)   # standard deviation of y50
         self.var_t50 = self.get_var_t50()  # varience of t50
         self.dt50 = np.sqrt(self.var_t50)  # standard deviation of t50
-        # h1 and h2 is the valid altitude range for the tanh fit
-        # note that c_fit is a tangent altitude, not a radial distance to the tangent point
+
+        self.dt50_slide = self.get_dt50_slide()
+        # self.get_dt50_slide() is what gets the error of the navigational measurement
 
     # This function calculates y(t) that corresponds to the binned data
     # time_crossing (int) is the total expected duration for which to calculate y(t)
@@ -102,7 +105,8 @@ class FitAtmosphere(OrbitModel2):
         alt_n = np.linalg.norm(eci_vec) - self.y0_ref
         return alt_n
 
-    # This function is called from self.fit_transmit_vs_alt() and returns the horizon crossing index range for the curve fitting
+    # This function is called from self.fit_transmit_vs_alt() and returns the horizon crossing index range for the curve fitting.
+    # I don't know if this is better than the [w1:w2] method, but it seems to work well
     def get_comp_range(self):
         comp_range = np.where((self.transmit_measured <= 0.99) & (
             self.transmit_measured >= 0.01))[0]  # initial comp_range
@@ -183,8 +187,8 @@ class FitAtmosphere(OrbitModel2):
         plt.show()
         return 0
 
-    # Newton/secant method to determine t50 directly from time and transmission data
-    def get_t50(self):
+    # Newton/secant method to determine t50 directly from time and transmission data (for comparison)
+    def get_t50_newton(self):
         if self.hc_type == "rising":
             t50_guess_index = np.where(self.transmit_measured[self.comp_range] > 0.5)[0][0]
         elif self.hc_type == "setting":
@@ -193,7 +197,7 @@ class FitAtmosphere(OrbitModel2):
         transmit_vs_time = interp1d(
             self.time_measured[self.comp_range], self.transmit_measured[self.comp_range], kind='linear')
 
-        f = lambda t: transmit_vs_time(t) - 0.5   # function to minimize
+        f = lambda t: transmit_vs_time(t) - 0.5   # function for finding the root
         delta = 1
         t50 = t50_guess
         tlast = t50_guess + 0.05
@@ -208,3 +212,48 @@ class FitAtmosphere(OrbitModel2):
             num_iter += 1
 
         return t50
+
+    def slide_t50(self):
+        '''This function slides the model curve past the data for the chisq analysis.'''
+        time_vs_h = interp1d(self.h_measured, self.time_measured, kind='cubic')
+        h_vs_time = interp1d(self.time_measured, self.h_measured, kind='cubic')
+        t50_slide_list = np.arange(self.t50_fit-0.25, self.t50_fit+0.25, 0.005)
+        h50_slide_list = h_vs_time(t50_slide_list)
+        chisq_list = []
+        for t50_i, h50_i in zip(t50_slide_list, h50_slide_list):
+            c_i = h50_i - (1/self.b_fit)*np.arctanh((0.5-self.d_fit)/self.a_fit)
+            transmit_model = self.transmit_vs_h(self.h_measured, self.a_fit, self.b_fit, c_i, self.d_fit)
+            rate_model = transmit_model*self.unattenuated_rate
+            # Note that there is a different comp_range during the curve slide, as the model could go negative
+            chisq_terms = (self.rate_measured - rate_model)**2/(rate_model)
+            if self.obs_dict['obsID'] == 50099:
+                comp_range = np.where((transmit_model > 0.03)
+                                    & (transmit_model < 0.99))[0]
+            else:
+                comp_range = np.where((transmit_model > 0.03)
+                                    & (transmit_model < 0.99))[0]
+            chisq_list.append(np.sum(chisq_terms[comp_range]))
+        # import matplotlib.pyplot as plt
+        # plt.plot(t50_slide_list, chisq_list)
+        # plt.show()
+        return t50_slide_list, np.array(chisq_list)
+
+    def get_dt50_slide(self):
+        '''Seamus should update this algorithm with his new method. I implemented this here so we can get the measurement uncertainties, but we should definitely improve this algorithm'''
+        t50_slide_list, chisq_list = self.slide_t50()
+        f = interp1d(t50_slide_list, np.array(chisq_list), kind='cubic')
+        t50 = minimize_scalar(f, x0=np.mean([t50_slide_list[0], t50_slide_list[-1]]))
+        
+        # Solve chisq+1 on left/right
+        f_left = lambda t: f(t) - f(t50) + 1
+        t_left = root_scalar(f_left, x0=t50, x0_last = t50-0.05)
+        f_right = lambda t: f(t) - f(t50) - 1
+        t_right = root_scalar(f_right, x0=t50, x0_last=t50+0.05)
+
+        dt_right = t_right - t50
+        dt_left = t50 - t_left
+        if dt_right >= dt_left:
+            dt50 = dt_right
+        else:
+            dt50 = dt_left
+        return dt50
