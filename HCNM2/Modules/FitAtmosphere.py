@@ -42,7 +42,6 @@ class FitAtmosphere(OrbitModel2):
         self.h50_fit = np.arctanh((0.5-self.d_fit)/self.a_fit)/self.b_fit+self.c_fit
         self.y50_fit = self.h50_fit + self.y0_ref # (ATMOSPHERIC MEASUREMENT)
         self.t50_fit = self.get_t50_fit()  # measured time at 50% transmission point (NAV MEASUREMENT)
-        self.t50_newton = self.get_t50_newton()  # directly from the data, not through tangent altitude
 
         # Error analysis for y50 and t50 from propogation of tanh() fit parameters
         self.var_y50 = self.get_var_y50()  # varience of y50 (for atmospheric filter)
@@ -51,7 +50,6 @@ class FitAtmosphere(OrbitModel2):
         self.dt50 = np.sqrt(self.var_t50)  # standard deviation of t50
 
         self.dt50_slide = self.get_dt50_slide()
-        # self.get_dt50_slide() is what gets the error of the navigational measurement
 
     # This function calculates y(t) that corresponds to the binned data
     # time_crossing (int) is the total expected duration for which to calculate y(t)
@@ -130,14 +128,14 @@ class FitAtmosphere(OrbitModel2):
         comp_range = self.get_comp_range()
 
         a_guess = 0.5
-        b_guess = 1/100    # we need to know how much tangent altitude is spanned from 1% to 99% (should be an under-estimate, use the highest energy to determine the under-estimate)
+        b_guess = 1/50    # we need to know how much tangent altitude is spanned from 1% to 99% (should be an under-estimate, use the highest energy to determine the under-estimate)
         d_guess = 0.5
-        c_guess = 50 - np.arctanh((0.5-d_guess)/a_guess)/b_guess  # (must under-estimate y50 and thus c also)
+        c_guess = 25 - np.arctanh((0.5-d_guess)/a_guess)/b_guess  # (must under-estimate y50 and thus c also)
         transmit_measured = self.transmit_measured[comp_range]
         # specify valid range for fit
         h_measured = self.h_measured[comp_range]
         popt, pcov = curve_fit(self.transmit_vs_h, h_measured, transmit_measured, p0=[
-                               a_guess, b_guess, c_guess, d_guess])
+                               a_guess, b_guess, c_guess, d_guess], bounds=(0,[1, 1, 500, 1]))
 
         return popt, pcov, comp_range
 
@@ -176,6 +174,7 @@ class FitAtmosphere(OrbitModel2):
 
     def plot_tanh_fit(self):
         import matplotlib.pyplot as plt
+        plt.figure()
         plt.plot(self.h_measured+self.y0_ref, self.rate_measured/self.unattenuated_rate, ".")
         h_model = np.linspace(min(self.h_measured), max(self.h_measured), 1000)
 
@@ -188,6 +187,7 @@ class FitAtmosphere(OrbitModel2):
         return 0
 
     # Newton/secant method to determine t50 directly from time and transmission data (for comparison)
+    # Note that this doesn't always work, especially with low SNR
     def get_t50_newton(self):
         if self.hc_type == "rising":
             t50_guess_index = np.where(self.transmit_measured[self.comp_range] > 0.5)[0][0]
@@ -217,7 +217,7 @@ class FitAtmosphere(OrbitModel2):
         '''This function slides the model curve past the data for the chisq analysis.'''
         time_vs_h = interp1d(self.h_measured, self.time_measured, kind='cubic')
         h_vs_time = interp1d(self.time_measured, self.h_measured, kind='cubic')
-        t50_slide_list = np.arange(self.t50_fit-0.25, self.t50_fit+0.25, 0.005)
+        t50_slide_list = np.arange(self.t50_fit-0.5, self.t50_fit+0.5, 0.005)
         h50_slide_list = h_vs_time(t50_slide_list)
         chisq_list = []
         for t50_i, h50_i in zip(t50_slide_list, h50_slide_list):
@@ -233,9 +233,6 @@ class FitAtmosphere(OrbitModel2):
                 comp_range = np.where((transmit_model > 0.03)
                                     & (transmit_model < 0.99))[0]
             chisq_list.append(np.sum(chisq_terms[comp_range]))
-        # import matplotlib.pyplot as plt
-        # plt.plot(t50_slide_list, chisq_list)
-        # plt.show()
         return t50_slide_list, np.array(chisq_list)
 
     def get_dt50_slide(self):

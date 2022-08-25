@@ -18,9 +18,11 @@ v4641NICER = {   # BASIC OBSERVATION INFO
             # USER-ENTERED INFORMATION
             "crossing_time_range": np.array([300 + 1.92224e8, 760 + 1.92224e8]),  # seconds in MET
             "spectrum_time_range": np.array([550 + 1.92224e8, 690 + 1.92224e8]),
+            "t_mid_datetime": '2020-02-03T19:39:27.25',
             "f107": 69.7,
             "Ap": 12,
             "SN": 0,
+            "TOD": 0.695,
 
             # PATHS TO DATA FILES (from cwd, HCNM2/)
             "evt_path": cwd + "/Data/NICER/2-3-20-v4641/NICER_events.evt",  # NICER events file
