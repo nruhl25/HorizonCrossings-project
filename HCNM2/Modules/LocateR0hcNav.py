@@ -8,22 +8,28 @@ import Modules.tools as tools
 import numpy as np
 
 # Class LocateR0Nav is a subclass of OrbitModel2
-# INPUTS: obs_dict (dict), orbit_model = "mkf", "rossi", or "aster", h_ref: altitude above constants.R_EARTH of reference sphere, used for Locating r0.
+# INPUTS: obs_dict (dict), orbit_model = "mkf", "rossi", or "aster", h_ref: altitude above constants.c (semi-minor axis) of reference sphere, used for Locating r0.
 
 class LocateR0hcNav(OrbitModel2):
-    def __init__(self, obs_dict, orbit_model, h0_ref):
+    def __init__(self, obs_dict, orbit_model, h0_ref=0):
         OrbitModel2.__init__(self, obs_dict, orbit_model)
         self.s_unit = self.obs_dict["starECI"]
         self.h0_ref = h0_ref
-        self.y0_ref = self.h0_ref + constants.R_EARTH
+        self.y0_ref = self.h0_ref + constants.c
 
         # Length of the LOS to the grazing point
-        self.A = np.sqrt(self.R_orbit ** 2 - constants.R_EARTH ** 2)
+        self.A = np.sqrt(self.R_orbit ** 2 - constants.c ** 2)
 
         # Identify r0_hc, t0_model (the time at r0_hc predicted by input model), psi_deg (out-of-plane angle), graze_point vector
         self.r0_hc, self.t0_model, self.psi_deg, self.graze_point = self.find_r0hc()
+        self.lat_gp, self.lon_gp = self.calc_gp_angles()   # angles in radians
         # can define lat_gp and lon_gp based on graze_point
         self.v0_model = self.v(self.t0_model)
+
+        # re-define y0_ref and h0_ref
+        self.y0_ref = np.linalg.norm(
+            tools.point_on_earth_azimuth_polar(self.lon_gp, self.lat_gp))
+        self.h0_ref = self.y0_ref - constants.c
 
     # This function returns the altitude of any point along the LOS with index n (any time t)
     def f(self, t, n):
@@ -107,3 +113,12 @@ class LocateR0hcNav(OrbitModel2):
             # print(f"alt_tp={alt_tp} km")
             # print(f"n_graze={n_graze} km")
         return r0_hc, t, psi_deg, graze_point
+
+    # function to calculate approximate latitude and longitude of grazing point
+    def calc_gp_angles(self):
+        rx, ry, rz = self.graze_point
+        p = np.sqrt(rx**2+ry**2)
+        polar = np.arctan2(rz, p)
+        azimuth = np.arctan2(ry, rx)
+        return polar, azimuth
+

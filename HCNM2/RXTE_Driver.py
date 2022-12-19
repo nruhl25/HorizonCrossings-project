@@ -72,7 +72,7 @@ def RXTE_Nav_Driver(obs_dict, e_band_ch, h0_ref, orbit_model="rossi"):
     #3) Fit count rate vs h (geocentric tangent altitudes above y0_ref)
     fit_obj=FitAtmosphere(obs_dict, orbit_model, r0_obj, rate_data, time_data, unattenuated_rate, e_band_kev)
 
-    # fit_obj.plot_tanh_fit()  # if you want to see the fit
+    fit_obj.plot_tanh_fit()  # if you want to see the fit
 
     #4) Determine r50 and t50_model by changing h0_ref in LocateR0hcNav
     r50_obj = LocateR0hcNav(obs_dict, orbit_model, h0_ref=fit_obj.h50_fit+h0_ref)
